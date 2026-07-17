@@ -1,3 +1,5 @@
+import { normalizeTags } from './tags';
+
 export function toIsoDate(date) {
   if (!date) return null;
 
@@ -32,6 +34,7 @@ export function normalizeTask(task) {
     list: task.list || 'inbox',
     scheduledDate: normalizeIsoDate(task.scheduledDate),
     dueDate: normalizeIsoDate(task.dueDate),
+    tags: normalizeTags(task.tags),
   };
 }
 
@@ -48,6 +51,12 @@ export function getTodayDate() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today;
+}
+
+export function parseIsoDate(value) {
+  if (!value) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
 }
 
 export function createNewTaskMetaForView(activeView) {

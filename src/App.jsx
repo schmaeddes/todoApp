@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Navigate, useParams } from 'react-router-dom';
 import { fetchTodos, saveTodos } from './api';
-import { createEmptyTaskMeta, createNewTaskMetaForView, getTaskDestinationLabel, getTodayDate, getVisibleTasks, getViewTitle, syncScheduleWithList, toIsoDate } from './dates';
+import { createEmptyTaskMeta, getTaskDestinationLabel, getTodayDate, getVisibleTasks, getViewTitle, syncScheduleWithList, toIsoDate } from './dates';
+import { normalizeTags } from './tags';
 import {
   InboxIcon,
   ScheduledIcon,
@@ -9,9 +10,7 @@ import {
   TrashIcon,
 } from './icons';
 import TaskItem from './TaskItem';
-import TaskMetaActions from './TaskMetaActions';
-
-const emptyDraft = createEmptyTaskMeta();
+import TaskModal from './TaskModal';
 
 const VIEW_ICONS = {
   inbox: InboxIcon,
@@ -28,15 +27,13 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newTaskMeta, setNewTaskMeta] = useState(emptyDraft);
-  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [taskModal, setTaskModal] = useState(null);
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dragOverTaskId, setDragOverTaskId] = useState(null);
   const nextId = useRef(1);
-  const inputRef = useRef(null);
   const readyToSave = useRef(false);
   const skipNextSave = useRef(true);
+  const saveQueueRef = useRef(Promise.resolve());
   const dragStateRef = useRef(null);
   const toastFadeOutRef = useRef(null);
   const toastRemoveRef = useRef(null);
@@ -72,25 +69,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!showAddForm) return;
-    inputRef.current?.focus();
-  }, [showAddForm]);
-
-  useEffect(() => {
-    if (!showAddForm) {
-      setNewTaskMeta(createEmptyTaskMeta());
-      return;
-    }
-
-    setNewTaskMeta(createNewTaskMetaForView(activeView));
-  }, [showAddForm, activeView]);
-
-  useEffect(() => {
-    setShowAddForm(false);
-
-    if (activeView === 'trash') {
-      setEditingTaskId(null);
-    }
+    setTaskModal(null);
   }, [activeView]);
 
   useEffect(() => {
@@ -106,17 +85,27 @@ export default function App() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
+  function persistTasks(nextTasks) {
     if (!readyToSave.current) return;
     if (skipNextSave.current) {
       skipNextSave.current = false;
       return;
     }
 
-    saveTodos(tasks).catch(() => setError('Could not save todos.'));
-  }, [tasks]);
+    saveQueueRef.current = saveQueueRef.current
+      .then(() => saveTodos(nextTasks))
+      .catch(() => setError('Could not save todos.'));
+  }
 
-  function addTask(text, meta = emptyDraft) {
+  function commitTasks(updater) {
+    setTasks((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      persistTasks(next);
+      return next;
+    });
+  }
+
+  function addTask(text, meta = createEmptyTaskMeta()) {
     const trimmed = text.trim();
     if (!trimmed) return;
 
@@ -129,9 +118,10 @@ export default function App() {
         syncScheduleWithList(meta.list || 'inbox', meta.scheduledDate),
       ),
       dueDate: toIsoDate(meta.dueDate),
+      tags: normalizeTags(meta.tags),
     };
 
-    setTasks((prev) => [...prev, newTask]);
+    commitTasks((prev) => [...prev, newTask]);
 
     const destination = getTaskDestinationLabel(newTask);
     if (destination !== 'Inbox') {
@@ -141,33 +131,45 @@ export default function App() {
     setError(null);
   }
 
-  function updateTask(id, updates) {
-    const existing = tasks.find((task) => task.id === id);
-    if (!existing) return;
+  function updateTask(id, updates, { closeEdit = true } = {}) {
+    let updated = null;
+    let previousDestination = null;
+    let nextDestination = null;
 
-    const list = updates.list || existing.list || 'inbox';
-    const scheduledDate =
-      'scheduledDate' in updates
-        ? updates.scheduledDate
-        : list === 'today'
-          ? toIsoDate(getTodayDate())
-          : existing.scheduledDate;
+    commitTasks((prev) => {
+      const existing = prev.find((task) => task.id === id);
+      if (!existing) return prev;
 
-    const updated = {
-      ...existing,
-      ...updates,
-      list,
-      scheduledDate,
-      dueDate: 'dueDate' in updates ? updates.dueDate : existing.dueDate,
-    };
+      const list = updates.list || existing.list || 'inbox';
+      const scheduledDate =
+        'scheduledDate' in updates
+          ? updates.scheduledDate
+          : list === 'today'
+            ? toIsoDate(getTodayDate())
+            : existing.scheduledDate;
 
-    const previousDestination = getTaskDestinationLabel(existing);
-    const nextDestination = getTaskDestinationLabel(updated);
+      updated = {
+        ...existing,
+        ...updates,
+        list,
+        scheduledDate,
+        dueDate: 'dueDate' in updates ? updates.dueDate : existing.dueDate,
+        tags: normalizeTags(
+          'tags' in updates ? updates.tags : existing.tags,
+        ),
+      };
 
-    setTasks((prev) =>
-      prev.map((task) => (task.id === id ? updated : task)),
-    );
-    setEditingTaskId(null);
+      previousDestination = getTaskDestinationLabel(existing);
+      nextDestination = getTaskDestinationLabel(updated);
+
+      return prev.map((task) => (task.id === id ? updated : task));
+    });
+
+    if (!updated) return;
+
+    if (closeEdit) {
+      setTaskModal(null);
+    }
     setError(null);
 
     if (previousDestination !== nextDestination) {
@@ -179,13 +181,13 @@ export default function App() {
     const task = tasks.find((item) => item.id === id);
     if (!task) return;
 
-    setTasks((prev) =>
+    commitTasks((prev) =>
       prev.map((item) =>
         item.id === id ? { ...item, list: 'trash' } : item,
       ),
     );
-    if (editingTaskId === id) {
-      setEditingTaskId(null);
+    if (taskModal === id) {
+      setTaskModal(null);
     }
     showMoveToast(task.text, 'Trash');
     setError(null);
@@ -197,43 +199,52 @@ export default function App() {
 
     const restored = { ...task, list: 'inbox' };
 
-    setTasks((prev) =>
+    commitTasks((prev) =>
       prev.map((item) => (item.id === id ? restored : item)),
     );
     showMoveToast(restored.text, getTaskDestinationLabel(restored));
     setError(null);
   }
 
+  function deleteTaskPermanently(id) {
+    if (taskModal === id) {
+      setTaskModal(null);
+    }
+
+    commitTasks((prev) => prev.filter((item) => item.id !== id));
+    setError(null);
+  }
+
   function toggleTask(id) {
-    setTasks((prev) =>
+    commitTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
     );
     setError(null);
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-
-    const meta = { ...newTaskMeta };
-    if (activeView === 'today' || activeView === 'scheduled') {
-      meta.scheduledDate = meta.scheduledDate || getTodayDate();
+  function handleModalSave(data) {
+    if (taskModal === 'add') {
+      addTask(data.text, data);
+      return;
     }
 
-    addTask(inputRef.current.value, meta);
-    inputRef.current.value = '';
-    setNewTaskMeta(createNewTaskMetaForView(activeView));
-    inputRef.current.focus();
+    if (typeof taskModal === 'number') {
+      updateTask(taskModal, data);
+    }
   }
 
   function handleEdit(taskId) {
-    setShowAddForm(false);
-    setEditingTaskId((current) => (current === taskId ? null : taskId));
+    setTaskModal(taskId);
+  }
+
+  function closeTaskModal() {
+    setTaskModal(null);
   }
 
   function reorderTasks(draggedId, targetId) {
     if (draggedId === targetId) return;
 
-    setTasks((prev) => {
+    commitTasks((prev) => {
       const draggedIndex = prev.findIndex((task) => task.id === draggedId);
       const targetIndex = prev.findIndex((task) => task.id === targetId);
 
@@ -250,7 +261,7 @@ export default function App() {
   }
 
   function handleRearrangeStart(event, taskId) {
-    if (loading || editingTaskId === taskId) return;
+    if (loading || taskModal === taskId) return;
 
     event.preventDefault();
     const handle = event.currentTarget;
@@ -306,6 +317,8 @@ export default function App() {
 
   const visibleTasks = getVisibleTasks(tasks, activeView);
   const remaining = visibleTasks.filter((task) => !task.done).length;
+  const inboxCount = getVisibleTasks(tasks, 'inbox').length;
+  const todayCount = getVisibleTasks(tasks, 'today').length;
 
   const emptyMessage =
     activeView === 'trash'
@@ -317,6 +330,10 @@ export default function App() {
           : 'No tasks yet. Tap + to add one.';
 
   const ViewIcon = VIEW_ICONS[activeView] || InboxIcon;
+  const editingTask =
+    typeof taskModal === 'number'
+      ? tasks.find((task) => task.id === taskModal)
+      : null;
 
   if (!activeView) {
     return <Navigate to="/inbox" replace />;
@@ -334,6 +351,9 @@ export default function App() {
           >
             <InboxIcon />
             Inbox
+            {inboxCount > 0 && (
+              <span className="sidebar-count">{inboxCount}</span>
+            )}
           </NavLink>
           <NavLink
             to="/today"
@@ -343,6 +363,9 @@ export default function App() {
           >
             <TodayIcon />
             Today
+            {todayCount > 0 && (
+              <span className="sidebar-count">{todayCount}</span>
+            )}
           </NavLink>
           <NavLink
             to="/scheduled"
@@ -377,52 +400,17 @@ export default function App() {
             <button
               type="button"
               className="add-toggle-btn"
-              title={showAddForm ? 'Close' : 'Add task'}
-              aria-label={showAddForm ? 'Close add form' : 'Add task'}
-              aria-expanded={showAddForm}
-              onClick={() => setShowAddForm((open) => !open)}
+              title="Add task"
+              aria-label="Add task"
+              onClick={() => setTaskModal('add')}
               disabled={loading}
             >
-              {showAddForm ? '×' : '+'}
+              +
             </button>
           )}
         </header>
 
         {error && <p className="error">{error}</p>}
-
-        {showAddForm && activeView !== 'trash' && (
-          <form className="add-form" onSubmit={handleSubmit}>
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="What needs to be done?"
-              autoComplete="off"
-              disabled={loading}
-            />
-            <TaskMetaActions
-              list={newTaskMeta.list}
-              onListChange={(list) =>
-                setNewTaskMeta((prev) => ({
-                  ...prev,
-                  list,
-                  scheduledDate: syncScheduleWithList(list, prev.scheduledDate),
-                }))
-              }
-              scheduledDate={newTaskMeta.scheduledDate}
-              onScheduledDateChange={(scheduledDate) =>
-                setNewTaskMeta((prev) => ({ ...prev, scheduledDate }))
-              }
-              dueDate={newTaskMeta.dueDate}
-              onDueDateChange={(dueDate) =>
-                setNewTaskMeta((prev) => ({ ...prev, dueDate }))
-              }
-              tags={newTaskMeta.tags}
-              disabled={loading}
-              showSubmit
-              submitLabel="Add"
-            />
-          </form>
-        )}
 
         <ul
           className={
@@ -439,17 +427,15 @@ export default function App() {
                 key={task.id}
                 task={task}
                 isTrashView={activeView === 'trash'}
-                isEditing={editingTaskId === task.id}
                 isDragging={draggedTaskId === task.id}
                 isDragOver={
                   dragOverTaskId === task.id && draggedTaskId !== task.id
                 }
                 disabled={loading}
                 onEdit={handleEdit}
-                onSave={(updates) => updateTask(task.id, updates)}
                 onToggle={toggleTask}
-                onRemove={moveTaskToTrash}
                 onMoveToInbox={moveTaskToInbox}
+                onDeletePermanently={deleteTaskPermanently}
                 onRearrangeStart={handleRearrangeStart}
               />
             ))
@@ -462,6 +448,25 @@ export default function App() {
           </p>
         )}
       </main>
+
+      {taskModal && (taskModal === 'add' || editingTask) && (
+        <TaskModal
+          mode={taskModal === 'add' ? 'add' : 'edit'}
+          task={editingTask}
+          activeView={activeView}
+          disabled={loading}
+          onClose={closeTaskModal}
+          onSave={handleModalSave}
+          onDelete={
+            typeof taskModal === 'number'
+              ? () => {
+                  moveTaskToTrash(taskModal);
+                  setTaskModal(null);
+                }
+              : undefined
+          }
+        />
+      )}
 
       {moveToast && (
         <div

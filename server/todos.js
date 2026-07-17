@@ -25,6 +25,11 @@ function parseMetadata(comment) {
   const dueMatch = comment.match(/due:(\d{4}-\d{2}-\d{2})/);
   if (dueMatch) metadata.dueDate = dueMatch[1];
 
+  const tagsMatch = comment.match(/tags:([\w,-]+)/);
+  if (tagsMatch) {
+    metadata.tags = tagsMatch[1].split(',').filter(Boolean);
+  }
+
   return metadata;
 }
 
@@ -41,6 +46,7 @@ function normalizeTodo(todo) {
     list: todo.list || 'inbox',
     scheduledDate: normalizeIsoDate(todo.scheduledDate),
     dueDate: normalizeIsoDate(todo.dueDate),
+    tags: Array.isArray(todo.tags) ? todo.tags : [],
   };
 }
 
@@ -58,6 +64,9 @@ function formatMetadata(todo) {
   }
   if (normalized.dueDate) {
     parts.push(`due:${normalized.dueDate}`);
+  }
+  if (normalized.tags.length > 0) {
+    parts.push(`tags:${normalized.tags.join(',')}`);
   }
 
   return ` <!-- ${parts.join(' ')} -->`;
@@ -105,6 +114,7 @@ export async function readTodos() {
       list: metadata.list || 'inbox',
       scheduledDate: metadata.scheduledDate || null,
       dueDate: metadata.dueDate || null,
+      tags: metadata.tags || [],
     }));
   }
 

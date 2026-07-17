@@ -4,6 +4,13 @@
   padding: 0;
 }
 
+:root {
+  --sidebar-blue: #172554;
+  --app-blue: #234a7a;
+  --app-blue-hover: #2b5689;
+  --app-blue-ring: rgba(35, 74, 122, 0.15);
+}
+
 body {
   font-family: system-ui, -apple-system, sans-serif;
   background: #f4f4f5;
@@ -27,7 +34,7 @@ body {
   width: 11rem;
   min-height: 100vh;
   padding: 1.5rem 0.75rem;
-  background: #1d4ed8;
+  background: var(--sidebar-blue);
 }
 
 .sidebar-nav {
@@ -80,6 +87,19 @@ body {
   color: #fff;
 }
 
+.sidebar-count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1;
+}
+
+.sidebar-btn:hover .sidebar-count,
+.sidebar-btn.active .sidebar-count {
+  color: rgba(255, 255, 255, 0.9);
+}
+
 .main {
   flex: 1;
   min-width: 0;
@@ -110,7 +130,7 @@ h1 {
 }
 
 .view-title-icon--inbox {
-  color: #3b82f6;
+  color: var(--app-blue);
 }
 
 .view-title-icon--today {
@@ -139,7 +159,7 @@ h1 {
   width: 2.25rem;
   height: 2.25rem;
   padding: 0;
-  background: #3b82f6;
+  background: var(--app-blue);
   color: #fff;
   font-size: 1.5rem;
   font-weight: 400;
@@ -147,7 +167,7 @@ h1 {
 }
 
 .add-toggle-btn:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--app-blue-hover);
 }
 
 .add-toggle-btn:disabled {
@@ -155,14 +175,65 @@ h1 {
   cursor: not-allowed;
 }
 
-.add-form {
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.modal {
+  width: 100%;
+  max-width: 48rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e4e4e7;
+}
+
+.modal-header h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.modal-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background: transparent;
+  color: #71717a;
+  font-size: 1.5rem;
+  line-height: 1;
+  border-radius: 6px;
+}
+
+.modal-close-btn:hover {
+  background: #f4f4f5;
+  color: #18181b;
+}
+
+.modal-form {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  padding: 1.25rem;
 }
 
-.add-form input {
+.modal-input {
   width: 100%;
   padding: 0.625rem 0.875rem;
   border: 1px solid #d4d4d8;
@@ -172,9 +243,23 @@ h1 {
   outline: none;
 }
 
-.add-form input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+.modal-input:focus {
+  border-color: var(--app-blue);
+  box-shadow: 0 0 0 3px var(--app-blue-ring);
+}
+
+.modal-delete-btn {
+  align-self: flex-start;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.modal-delete-btn:hover:not(:disabled) {
+  background: #fef2f2;
 }
 
 .add-form-actions {
@@ -185,13 +270,13 @@ h1 {
 .add-submit-btn {
   flex-shrink: 0;
   padding: 0.5rem 1rem;
-  background: #3b82f6;
+  background: var(--app-blue);
   color: #fff;
   font-weight: 500;
 }
 
 .add-submit-btn:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--app-blue-hover);
 }
 
 .add-action-btn {
@@ -232,6 +317,16 @@ h1 {
   width: 100%;
 }
 
+.tag-picker-wrap .add-action-btn {
+  gap: 0.375rem;
+}
+
+.tag-dropdown {
+  min-width: 13rem;
+  right: 0;
+  left: auto;
+}
+
 .list-dropdown {
   position: absolute;
   top: calc(100% + 0.5rem);
@@ -263,8 +358,8 @@ h1 {
 }
 
 .list-dropdown-option.selected {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--app-blue-ring);
+  color: var(--app-blue);
 }
 
 .calendar-picker-wrap .add-action-btn {
@@ -289,7 +384,7 @@ h1 {
 }
 
 .calendar-selected-active {
-  border-color: #3b82f6;
+  border-color: var(--app-blue);
 }
 
 .calendar-selected-active .calendar-clear-btn {
@@ -454,23 +549,23 @@ h1 {
 }
 
 .date-picker-day.today {
-  background: #3b82f6;
+  background: var(--app-blue);
   color: #fff;
   font-weight: 600;
 }
 
 .date-picker-day.today:hover {
-  background: #2563eb;
+  background: var(--app-blue-hover);
   color: #fff;
 }
 
 .date-picker-day.selected {
-  background: #3b82f6;
+  background: var(--app-blue);
   color: #fff;
 }
 
 .date-picker-day.selected:hover {
-  background: #2563eb;
+  background: var(--app-blue-hover);
 }
 
 .add-action-btn:hover:not(:disabled) {
@@ -480,13 +575,13 @@ h1 {
 }
 
 .add-action-btn-selected {
-  border-color: #3b82f6;
-  color: #2563eb;
+  border-color: var(--app-blue);
+  color: var(--app-blue);
 }
 
 .add-action-btn-selected:hover:not(:disabled) {
-  border-color: #2563eb;
-  color: #1d4ed8;
+  border-color: var(--app-blue-hover);
+  color: var(--app-blue-hover);
 }
 
 .add-action-btn:disabled,
@@ -544,7 +639,7 @@ button {
   width: 1.125rem;
   height: 1.125rem;
   cursor: pointer;
-  accent-color: #3b82f6;
+  accent-color: var(--app-blue);
   flex-shrink: 0;
 }
 
@@ -569,7 +664,7 @@ button {
 }
 
 .task-text-input:focus {
-  border-bottom-color: #3b82f6;
+  border-bottom-color: var(--app-blue);
 }
 
 .task-dates {
@@ -625,8 +720,8 @@ button {
 }
 
 .task-card.drag-over {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  border-color: var(--app-blue);
+  box-shadow: 0 0 0 2px var(--app-blue-ring);
 }
 
 .task-item:hover .edit-btn,
@@ -641,8 +736,8 @@ button {
 }
 
 .edit-btn:hover {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--app-blue-ring);
+  color: var(--app-blue);
 }
 
 .edit-btn .icon {
@@ -708,11 +803,46 @@ button {
 }
 
 .move-btn:hover {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--app-blue-ring);
+  color: var(--app-blue);
 }
 
 .move-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.permanent-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  background: transparent;
+  color: #a1a1aa;
+  opacity: 0;
+  border-radius: 4px;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+}
+
+.permanent-delete-btn .icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.task-item:hover .permanent-delete-btn,
+.task-item:focus-within .permanent-delete-btn {
+  opacity: 1;
+}
+
+.permanent-delete-btn:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.permanent-delete-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
