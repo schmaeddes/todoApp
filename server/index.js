@@ -1,4 +1,5 @@
 import express from 'express';
+import { normalizeSettings, readSettings, writeSettings } from './config.js';
 import {
   normalizeProject,
   normalizeTodo,
@@ -60,6 +61,29 @@ app.put('/api/projects', async (req, res) => {
     res.json(normalized);
   } catch {
     res.status(500).json({ error: 'Failed to write projects' });
+  }
+});
+
+app.get('/api/settings', async (_req, res) => {
+  try {
+    res.json(await readSettings());
+  } catch {
+    res.status(500).json({ error: 'Failed to read settings' });
+  }
+});
+
+app.put('/api/settings', async (req, res) => {
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    res.status(400).json({ error: 'Expected a settings object' });
+    return;
+  }
+
+  try {
+    const normalized = normalizeSettings(req.body);
+    await writeSettings(normalized);
+    res.json(normalized);
+  } catch {
+    res.status(500).json({ error: 'Failed to write settings' });
   }
 });
 

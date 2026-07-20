@@ -1,5 +1,6 @@
 import { normalizeTask } from './lib/tasks';
 import { normalizeProject } from './projects';
+import { normalizeSettings } from './lib/settings';
 
 export async function fetchTodos() {
   const response = await fetch('/api/todos');
@@ -46,6 +47,31 @@ export async function saveProjects(projects) {
 
   if (!response.ok) {
     throw new Error('Failed to save projects');
+  }
+
+  return response.json();
+}
+
+export async function fetchSettings() {
+  const response = await fetch('/api/settings');
+  if (!response.ok) {
+    throw new Error('Failed to load settings');
+  }
+
+  const settings = await response.json();
+  return normalizeSettings(settings);
+}
+
+export async function saveSettings(settings) {
+  const payload = normalizeSettings(settings);
+  const response = await fetch('/api/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to save settings');
   }
 
   return response.json();

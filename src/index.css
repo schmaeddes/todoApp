@@ -27,6 +27,32 @@
   --shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.1);
   --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.18);
   --shadow-toast: 0 4px 16px rgba(0, 0, 0, 0.18);
+  --toast-bg: var(--text-primary);
+  --toast-text: #fafafa;
+  --toast-accent: #93c5fd;
+  --calendar-active-divider: #bfdbfe;
+}
+
+[data-theme="dark"] {
+  --surface: #18181b;
+  --surface-elevated: #27272a;
+  --border: #3f3f46;
+  --border-strong: #52525b;
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d8;
+  --text-muted: #71717a;
+  --text-subtle: #a1a1aa;
+  --danger-hover-bg: #450a0a;
+  --danger-border: #7f1d1d;
+  --danger-text: #fca5a5;
+  --app-blue-ring: rgba(96, 165, 250, 0.2);
+  --shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-toast: 0 4px 16px rgba(0, 0, 0, 0.55);
+  --toast-bg: #3f3f46;
+  --toast-text: #fafafa;
+  --toast-accent: #93c5fd;
+  --calendar-active-divider: #1e3a5f;
 }
 
 body {
@@ -613,7 +639,7 @@ h1 {
 }
 
 .calendar-selected-active .calendar-clear-btn {
-  border-left-color: #bfdbfe;
+  border-left-color: var(--calendar-active-divider);
 }
 
 .calendar-selected-due {
@@ -967,8 +993,8 @@ button:disabled {
   z-index: 100;
   max-width: calc(100% - 2rem);
   padding: 0.625rem 1rem;
-  background: var(--text-primary);
-  color: #fafafa;
+  background: var(--toast-bg);
+  color: var(--toast-text);
   font-size: 0.875rem;
   border-radius: 8px;
   box-shadow: var(--shadow-toast);
@@ -989,5 +1015,158 @@ button:disabled {
 }
 
 .move-toast-list {
-  color: #93c5fd;
+  color: var(--toast-accent);
+}
+
+/* ── Settings ── */
+
+.settings-page {
+  width: 100%;
+}
+
+.settings-section {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.settings-section-title {
+  padding: 0.875rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.settings-section-body .settings-row + .settings-row {
+  border-top: 1px solid var(--border);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.settings-row--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.settings-color-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.settings-color-option {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.settings-color-option--add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--text-subtle);
+}
+
+.settings-color-add-icon {
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.settings-color-option--add.is-selected {
+  color: #fff;
+}
+
+.settings-color-option--add.is-selected .settings-color-add-icon {
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.65);
+}
+
+.settings-color-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.settings-color-option:hover:not(:disabled) {
+  transform: scale(1.08);
+}
+
+.settings-color-option.is-selected {
+  box-shadow:
+    0 0 0 2px var(--surface-elevated),
+    0 0 0 4px var(--app-blue);
+}
+
+.settings-color-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.settings-row-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.settings-row-description {
+  margin-top: 0.25rem;
+  color: var(--text-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.settings-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 1.5rem;
+  padding: 0;
+  background: var(--border-strong);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.settings-switch.is-on {
+  background: var(--app-blue);
+}
+
+.settings-switch-thumb {
+  position: absolute;
+  top: 0.125rem;
+  left: 0.125rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.settings-switch.is-on .settings-switch-thumb {
+  transform: translateX(1.25rem);
+}
+
+.settings-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

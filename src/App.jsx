@@ -9,6 +9,7 @@ import useActiveView from './hooks/useActiveView';
 import useAppBootstrap from './hooks/useAppBootstrap';
 import useMoveToast from './hooks/useMoveToast';
 import useProjectStore from './hooks/useProjectStore';
+import useSettings from './hooks/useSettings';
 import useTaskModal, {
   createTaskModalHandlers,
   resolveTaskModalState,
@@ -27,6 +28,8 @@ export default function App() {
     nextTaskId,
     nextProjectId,
   } = useAppBootstrap();
+
+  const { settings, settingsLoading, setDarkMode, setAppColor } = useSettings({ setError });
 
   const { moveToast, showMoveToast } = useMoveToast();
 
@@ -124,7 +127,13 @@ export default function App() {
         {error && <p className="error">{error}</p>}
 
         {activeView === 'settings' ? (
-          <SettingsPage />
+          <SettingsPage
+            darkMode={settings.darkMode}
+            appColor={settings.appColor}
+            disabled={loading || settingsLoading}
+            onDarkModeChange={setDarkMode}
+            onAppColorChange={setAppColor}
+          />
         ) : (
           <TaskListView
             activeView={activeView}
