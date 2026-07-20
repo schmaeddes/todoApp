@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Navigate, useLocation, useParams } from 'react-router-dom';
 import { fetchProjects, fetchTodos, saveProjects, saveTodos } from './api';
-import { createEmptyTaskMeta, getTaskDestinationLabel, getTodayTaskCounts, getVisibleTasks, getViewTitle, normalizeTask, resolveTaskPlacement, toIsoDate } from './dates';
+import { createEmptyTaskMeta, getProjectTaskCounts, getTaskDestinationLabel, getTodayTaskCounts, getVisibleTasks, getViewTitle, normalizeTask, resolveTaskPlacement, toIsoDate } from './dates';
 import { normalizeTags } from './tags';
 import {
   createUniqueProjectSlug,
-  getProjectTaskCount,
   normalizeProject,
 } from './projects';
 import {
+  EditIcon,
   InboxIcon,
+  ProjectIcon,
   ProjectsIcon,
   ScheduledIcon,
   TodayIcon,
@@ -24,10 +25,19 @@ const VIEW_ICONS = {
   scheduled: ScheduledIcon,
   trash: TrashIcon,
   projects: ProjectsIcon,
-  project: ProjectsIcon,
+  project: ProjectIcon,
 };
 
 const VALID_VIEWS = new Set(['inbox', 'today', 'scheduled', 'trash', 'projects']);
+
+function getEditingProjectId(taskModal) {
+  if (typeof taskModal !== 'string' || !taskModal.startsWith('edit-project-')) {
+    return null;
+  }
+
+  const projectId = Number(taskModal.slice('edit-project-'.length));
+  return Number.isNaN(projectId) ? null : projectId;
+}
 
 export default function App() {
   const { view, projectSlug } = useParams();
@@ -181,6 +191,23 @@ export default function App() {
     setError(null);
   }
 
+  function renameProject(projectId, name) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    commitProjects((prev) =>
+      prev.map((project) =>
+        project.id === projectId ? { ...project, name: trimmed } : project,
+      ),
+    );
+    setTaskModal(null);
+    setError(null);
+  }
+
+  function handleEditProject(projectId) {
+    setTaskModal(`edit-project-${projectId}`);
+  }
+
   function updateTask(id, updates, { closeEdit = true } = {}) {
     let updated = null;
     let previousDestination = null;
@@ -321,8 +348,15 @@ export default function App() {
   }
 
   function handleModalSave(data) {
+    const editingProjectId = getEditingProjectId(taskModal);
+
     if (taskModal === 'add-project') {
       addProject(data.name);
+      return;
+    }
+
+    if (editingProjectId !== null) {
+      renameProject(editingProjectId, data.name);
       return;
     }
 
@@ -445,7 +479,7 @@ export default function App() {
         : activeView === 'scheduled'
           ? 'No scheduled tasks.'
           : activeView === 'projects'
-            ? 'No projects yet. Tap Add Projekt to create one.'
+            ? 'No projects yet. Tap + next to Projects to create one.'
             : activeView === 'project'
               ? 'No tasks yet. Tap + to add one.'
               : 'No tasks yet. Tap + to add one.';
@@ -454,6 +488,11 @@ export default function App() {
   const editingTask =
     typeof taskModal === 'number'
       ? tasks.find((task) => task.id === taskModal)
+      : null;
+  const editingProjectId = getEditingProjectId(taskModal);
+  const editingProject =
+    editingProjectId !== null
+      ? projects.find((project) => project.id === editingProjectId) ?? null
       : null;
 
   if (!loading && projectSlug && !activeProject) {
@@ -525,18 +564,25 @@ export default function App() {
             Trash
           </NavLink>
           <hr className="sidebar-divider" />
-          <NavLink
-            to="/projects"
-            end
-            className={({ isActive }) =>
-              'sidebar-btn' + (isActive ? ' active' : '')
-            }
-          >
-            <ProjectsIcon />
-            Projects
-          </NavLink>
+          <div className="sidebar-section-header">
+            <span className="sidebar-section-label">
+              <ProjectsIcon />
+              Projects
+            </span>
+            <button
+              type="button"
+              className="sidebar-add-btn"
+              title="Add project"
+              aria-label="Add project"
+              onClick={() => setTaskModal('add-project')}
+              disabled={loading}
+            >
+              +
+            </button>
+          </div>
           {projects.map((project) => {
-            const projectCount = getProjectTaskCount(tasks, project.slug);
+            const { onTime: projectOnTimeCount, overdue: projectOverdueCount } =
+              getProjectTaskCounts(tasks, project.slug);
 
             return (
               <NavLink
@@ -548,8 +594,22 @@ export default function App() {
                 }
               >
                 {project.name}
-                {projectCount > 0 && (
-                  <span className="sidebar-count">{projectCount}</span>
+                {(projectOnTimeCount > 0 || projectOverdueCount > 0) && (
+                  <span className="sidebar-counts">
+                    {projectOnTimeCount > 0 && (
+                      <span className="sidebar-count">{projectOnTimeCount}</span>
+                    )}
+                    {projectOnTimeCount > 0 && projectOverdueCount > 0 && (
+                      <span className="sidebar-count-separator" aria-hidden="true">
+                        |
+                      </span>
+                    )}
+                    {projectOverdueCount > 0 && (
+                      <span className="sidebar-count sidebar-count--overdue">
+                        {projectOverdueCount}
+                      </span>
+                    )}
+                  </span>
                 )}
               </NavLink>
             );
@@ -559,24 +619,32 @@ export default function App() {
 
       <main className="main">
         <header className="header">
-          <h1 className="view-title">
-            <span className={`view-title-icon view-title-icon--${activeView}`}>
-              <ViewIcon />
-            </span>
-            {getViewTitle(activeView, activeProject)}
-          </h1>
-          {activeView === 'projects' ? (
-            <button
-              type="button"
-              className="add-toggle-btn add-toggle-btn--labeled"
-              title="Add Projekt"
-              aria-label="Add Projekt"
-              onClick={() => setTaskModal('add-project')}
-              disabled={loading}
-            >
-              Add Projekt
-            </button>
-          ) : activeView !== 'trash' ? (
+          <div
+            className={
+              'view-title-wrap' +
+              (activeView === 'project' ? ' view-title-wrap--editable' : '')
+            }
+          >
+            <h1 className="view-title">
+              <span className={`view-title-icon view-title-icon--${activeView}`}>
+                <ViewIcon />
+              </span>
+              {getViewTitle(activeView, activeProject)}
+            </h1>
+            {activeView === 'project' && activeProject && (
+              <button
+                type="button"
+                className="view-title-edit-btn"
+                title="Edit project"
+                aria-label={`Edit ${activeProject.name}`}
+                disabled={loading}
+                onClick={() => handleEditProject(activeProject.id)}
+              >
+                <EditIcon />
+              </button>
+            )}
+          </div>
+          {activeView !== 'trash' && activeView !== 'projects' ? (
             <button
               type="button"
               className="add-toggle-btn"
@@ -636,18 +704,23 @@ export default function App() {
       {taskModal &&
         (taskModal === 'add' ||
           taskModal === 'add-project' ||
+          editingProject ||
           editingTask) && (
         <TaskModal
           mode={
             taskModal === 'add-project'
               ? 'add-project'
-              : taskModal === 'add'
-                ? 'add'
-                : 'edit'
+              : editingProject
+                ? 'edit-project'
+                : taskModal === 'add'
+                  ? 'add'
+                  : 'edit'
           }
           task={editingTask}
+          project={editingProject}
           activeView={activeView}
           activeProject={activeProject}
+          projects={projects}
           disabled={loading}
           onClose={closeTaskModal}
           onSave={handleModalSave}

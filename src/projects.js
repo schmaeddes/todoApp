@@ -50,3 +50,16 @@ export function getProjectTaskCount(tasks, slug) {
   const list = toProjectList(slug);
   return tasks.filter((task) => task.list === list).length;
 }
+
+export function getListLabel(list, projects = []) {
+  if (list === 'inbox') return 'Inbox';
+  if (list === 'today') return 'Today';
+
+  if (isProjectList(list)) {
+    const slug = getProjectSlugFromList(list);
+    const project = projects.find((item) => item.slug === slug);
+    return project?.name || 'Project';
+  }
+
+  return 'Inbox';
+}

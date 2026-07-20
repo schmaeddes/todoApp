@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import DatePicker, { formatDisplayDate } from './DatePicker';
-import { CalendarIcon, DueDateIcon, TagIcon } from './icons';
+import { CalendarIcon, DueDateIcon, InboxIcon, ProjectIcon, TagIcon, TodayIcon } from './icons';
+import { getListLabel, isProjectList, toProjectList } from './projects';
 import { EISENHOWER_PRIORITIES, getTagLabel } from './tags';
 
 function DateActionButton({
@@ -91,6 +92,82 @@ function DateActionButton({
   );
 }
 
+function LocationSelectButton({ list, onListChange, projects, disabled }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+  const selectedLabel = getListLabel(list, projects);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handleClickOutside(event) {
+      if (wrapRef.current && !wrapRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  function handleSelect(value) {
+    onListChange(value);
+    setOpen(false);
+  }
+
+  function getIcon() {
+    if (list === 'today') return <TodayIcon />;
+    if (isProjectList(list)) return <ProjectIcon />;
+    return <InboxIcon />;
+  }
+
+  const options = [
+    { value: 'inbox', label: 'Inbox' },
+    { value: 'today', label: 'Today' },
+    ...projects.map((project) => ({
+      value: toProjectList(project.slug),
+      label: project.name,
+    })),
+  ];
+
+  return (
+    <div className="list-picker-wrap location-picker-wrap" ref={wrapRef}>
+      <button
+        type="button"
+        className="add-action-btn add-action-btn-label add-action-btn-selected"
+        title="Location"
+        aria-label="Location"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        disabled={disabled}
+        onClick={() => setOpen((isOpen) => !isOpen)}
+      >
+        {getIcon()}
+        {selectedLabel}
+      </button>
+      {open && (
+        <div className="list-dropdown location-dropdown" role="listbox" aria-label="Select location">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={list === option.value}
+              className={
+                'list-dropdown-option' +
+                (list === option.value ? ' selected' : '')
+              }
+              onClick={() => handleSelect(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TagSelectButton({ tags, onTagsChange, disabled }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
@@ -161,6 +238,9 @@ function TagSelectButton({ tags, onTagsChange, disabled }) {
 }
 
 export default function TaskMetaActions({
+  list,
+  onListChange,
+  projects = [],
   scheduledDate,
   onScheduledDateChange,
   dueDate,
@@ -173,6 +253,12 @@ export default function TaskMetaActions({
 }) {
   return (
     <div className="add-form-actions">
+      <LocationSelectButton
+        list={list}
+        onListChange={onListChange}
+        projects={projects}
+        disabled={disabled}
+      />
       <DateActionButton
         label="Schedule"
         date={scheduledDate}

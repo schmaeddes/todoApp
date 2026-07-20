@@ -174,6 +174,23 @@ export function getTodayTaskCounts(tasks) {
   );
 }
 
+export function getProjectTaskCounts(tasks, slug) {
+  const list = toProjectList(slug);
+  const projectTasks = tasks.filter((task) => task.list === list);
+
+  return projectTasks.reduce(
+    (counts, task) => {
+      if (task.dueDate && isOverdue(task.dueDate)) {
+        counts.overdue += 1;
+      } else {
+        counts.onTime += 1;
+      }
+      return counts;
+    },
+    { onTime: 0, overdue: 0 },
+  );
+}
+
 export function getViewTitle(activeView, activeProject = null, date = new Date()) {
   switch (activeView) {
     case 'today':

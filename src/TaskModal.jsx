@@ -5,7 +5,6 @@ import {
   parseIsoDate,
   toIsoDate,
 } from './dates';
-import { toProjectList } from './projects';
 import TaskMetaActions from './TaskMetaActions';
 
 function createDraftFromTask(task) {
@@ -28,8 +27,10 @@ function createAddDraft(activeView, activeProject = null) {
 export default function TaskModal({
   mode,
   task,
+  project = null,
   activeView,
   activeProject = null,
+  projects = [],
   disabled,
   onClose,
   onSave,
@@ -38,26 +39,32 @@ export default function TaskModal({
   const textInputRef = useRef(null);
   const isAdd = mode === 'add';
   const isAddProject = mode === 'add-project';
+  const isEditProject = mode === 'edit-project';
+  const isProjectModal = isAddProject || isEditProject;
   const [draft, setDraft] = useState(() =>
-    isAddProject ? { text: '' } : isAdd ? createAddDraft(activeView, activeProject) : createDraftFromTask(task),
+    isProjectModal
+      ? { text: isEditProject ? project?.name || '' : '' }
+      : isAdd
+        ? createAddDraft(activeView, activeProject)
+        : createDraftFromTask(task),
   );
 
   useEffect(() => {
     setDraft(
-      isAddProject
-        ? { text: '' }
+      isProjectModal
+        ? { text: isEditProject ? project?.name || '' : '' }
         : isAdd
           ? createAddDraft(activeView, activeProject)
           : createDraftFromTask(task),
     );
-  }, [mode, task, activeView, activeProject, isAdd, isAddProject]);
+  }, [mode, task, project, activeView, activeProject, isAdd, isProjectModal, isEditProject]);
 
   useEffect(() => {
     textInputRef.current?.focus();
-    if (!isAdd && !isAddProject) {
+    if (isEditProject || (!isAdd && !isAddProject)) {
       textInputRef.current?.select();
     }
-  }, [isAdd, isAddProject]);
+  }, [isAdd, isAddProject, isEditProject]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -81,30 +88,24 @@ export default function TaskModal({
     const trimmed = draft.text.trim();
     if (!trimmed) return;
 
-    if (isAddProject) {
+    if (isProjectModal) {
       onSave({ name: trimmed });
-      setDraft({ text: '' });
-      requestAnimationFrame(() => textInputRef.current?.focus());
+      if (isAddProject) {
+        setDraft({ text: '' });
+        requestAnimationFrame(() => textInputRef.current?.focus());
+      }
       return;
     }
 
-    let list = draft.list || 'inbox';
     let scheduledDate = draft.scheduledDate;
 
-    if (isAdd) {
-      if (activeView === 'today') {
-        list = 'today';
-        scheduledDate = null;
-      } else if (activeView === 'project' && activeProject) {
-        list = toProjectList(activeProject.slug);
-      } else if (activeView === 'scheduled') {
-        scheduledDate = scheduledDate || getTodayDate();
-      }
+    if (isAdd && activeView === 'scheduled' && !scheduledDate) {
+      scheduledDate = getTodayDate();
     }
 
     onSave({
       text: trimmed,
-      list,
+      list: draft.list || 'inbox',
       scheduledDate: toIsoDate(scheduledDate),
       dueDate: toIsoDate(draft.dueDate),
       tags: draft.tags,
@@ -130,7 +131,13 @@ export default function TaskModal({
       >
         <header className="modal-header">
           <h2 id="task-modal-title">
-            {isAddProject ? 'Add project' : isAdd ? 'Add task' : 'Edit task'}
+            {isAddProject
+              ? 'Add project'
+              : isEditProject
+                ? 'Edit project'
+                : isAdd
+                  ? 'Add task'
+                  : 'Edit task'}
           </h2>
           <button
             type="button"
@@ -158,8 +165,11 @@ export default function TaskModal({
             }
           />
 
-          {!isAddProject && (
+          {!isProjectModal && (
             <TaskMetaActions
+              list={draft.list || 'inbox'}
+              onListChange={(list) => setDraft((prev) => ({ ...prev, list }))}
+              projects={projects}
               scheduledDate={draft.scheduledDate}
               onScheduledDateChange={(scheduledDate) =>
                 setDraft((prev) => ({ ...prev, scheduledDate }))
@@ -176,15 +186,15 @@ export default function TaskModal({
             />
           )}
 
-          {isAddProject && (
+          {isProjectModal && (
             <div className="add-form-actions">
               <button type="submit" className="add-submit-btn" disabled={disabled}>
-                Add
+                {isEditProject ? 'Save' : 'Add'}
               </button>
             </div>
           )}
 
-          {!isAdd && onDelete && (
+          {!isAdd && !isProjectModal && onDelete && (
             <button
               type="button"
               className="modal-delete-btn"
