@@ -789,17 +789,26 @@ h1 {
   background: var(--surface);
 }
 
-.date-picker-day.today,
+.date-picker-day.today {
+  font-weight: 700;
+  color: var(--app-blue);
+}
+
+.date-picker-day.today.weekend {
+  color: var(--app-blue);
+}
+
+.date-picker-day.today:hover:not(.selected) {
+  background: var(--surface);
+  color: var(--app-blue-hover);
+}
+
 .date-picker-day.selected {
   background: var(--app-blue);
   color: #fff;
-}
-
-.date-picker-day.today {
   font-weight: 600;
 }
 
-.date-picker-day.today:hover,
 .date-picker-day.selected:hover {
   background: var(--app-blue-hover);
   color: #fff;

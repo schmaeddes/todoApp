@@ -1,10 +1,5 @@
 import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TODOS_FILE = path.join(__dirname, '..', 'todos.md');
-const LEGACY_PROJECTS_FILE = path.join(__dirname, '..', 'projects.md');
+import { LEGACY_PROJECTS_FILE, TODOS_FILE } from './paths.js';
 
 const TASK_LINE =
   /^- \[( |x)\] (.+?)(?: <!-- (.+?) -->)?\s*$/;

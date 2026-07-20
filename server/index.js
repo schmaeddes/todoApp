@@ -1,5 +1,8 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { normalizeSettings, readSettings, writeSettings } from './config.js';
+import { ensureDataDir, getDataDir } from './paths.js';
 import {
   normalizeProject,
   normalizeTodo,
@@ -9,8 +12,10 @@ import {
   writeTodos,
 } from './todos.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-const PORT = 3001;
+const PORT = Number(process.env.PORT) || 3001;
+const distDir = path.join(__dirname, '..', 'dist');
 
 app.use(express.json());
 
@@ -87,6 +92,21 @@ app.put('/api/settings', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`API server running on http://localhost:${PORT} (tags: enabled)`);
-});
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(distDir));
+
+  app.get(/^(?!\/api).*/, (_req, res) => {
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
+}
+
+async function start() {
+  await ensureDataDir();
+
+  app.listen(PORT, () => {
+    console.log(`API server running on http://localhost:${PORT}`);
+    console.log(`Data directory: ${getDataDir()}`);
+  });
+}
+
+start();

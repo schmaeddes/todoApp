@@ -1,9 +1,5 @@
 import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CONFIG_FILE = path.join(__dirname, '..', 'config.yaml');
+import { CONFIG_FILE } from './paths.js';
 
 const DEFAULT_APP_COLOR_RGB = '35, 74, 122';
 
