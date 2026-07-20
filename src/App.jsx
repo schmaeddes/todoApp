@@ -13,6 +13,7 @@ import {
   ProjectIcon,
   ProjectsIcon,
   ScheduledIcon,
+  SettingsIcon,
   TodayIcon,
   TrashIcon,
 } from './icons';
@@ -26,9 +27,10 @@ const VIEW_ICONS = {
   trash: TrashIcon,
   projects: ProjectsIcon,
   project: ProjectIcon,
+  settings: SettingsIcon,
 };
 
-const VALID_VIEWS = new Set(['inbox', 'today', 'scheduled', 'trash', 'projects']);
+const VALID_VIEWS = new Set(['inbox', 'today', 'scheduled', 'trash', 'projects', 'settings']);
 
 function getEditingProjectId(taskModal) {
   if (typeof taskModal !== 'string' || !taskModal.startsWith('edit-project-')) {
@@ -467,7 +469,8 @@ export default function App() {
 
   const visibleTasks = getVisibleTasks(tasks, activeView, activeProject);
   const remaining = visibleTasks.filter((task) => !task.done).length;
-  const inboxCount = getVisibleTasks(tasks, 'inbox').length;
+  const inboxCount = getVisibleTasks(tasks, 'inbox').filter((task) => !task.done)
+    .length;
   const { onTime: todayOnTimeCount, overdue: todayOverdueCount } =
     getTodayTaskCounts(tasks);
 
@@ -580,6 +583,7 @@ export default function App() {
               +
             </button>
           </div>
+          <div className="sidebar-projects-list">
           {projects.map((project) => {
             const { onTime: projectOnTimeCount, overdue: projectOverdueCount } =
               getProjectTaskCounts(tasks, project.slug);
@@ -614,7 +618,17 @@ export default function App() {
               </NavLink>
             );
           })}
+          </div>
         </nav>
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            'sidebar-btn sidebar-btn--settings' + (isActive ? ' active' : '')
+          }
+        >
+          <SettingsIcon />
+          Settings
+        </NavLink>
       </aside>
 
       <main className="main">
@@ -644,7 +658,9 @@ export default function App() {
               </button>
             )}
           </div>
-          {activeView !== 'trash' && activeView !== 'projects' ? (
+          {activeView !== 'trash' &&
+          activeView !== 'projects' &&
+          activeView !== 'settings' ? (
             <button
               type="button"
               className="add-toggle-btn"
@@ -660,6 +676,10 @@ export default function App() {
 
         {error && <p className="error">{error}</p>}
 
+        {activeView === 'settings' ? (
+          <div className="settings-page" />
+        ) : (
+          <>
         <ul
           className={
             'task-list' + (draggedTaskId !== null ? ' is-dragging' : '')
@@ -698,6 +718,8 @@ export default function App() {
           <p className="count">
             {remaining} of {visibleTasks.length} remaining
           </p>
+        )}
+          </>
         )}
       </main>
 

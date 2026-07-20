@@ -31,15 +31,23 @@ body {
 
 .sidebar {
   flex-shrink: 0;
-  width: 13rem;
+  width: 15rem;
   min-height: 100vh;
   padding: 1.5rem 0.75rem;
   background: var(--sidebar-blue);
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar-btn--settings {
+  margin-top: auto;
 }
 
 .sidebar-btn:nth-child(2) {
@@ -52,6 +60,22 @@ body {
 
 .sidebar-btn:nth-child(4) {
   margin-top: 0.75rem;
+}
+
+.sidebar-projects-list .sidebar-btn:nth-child(2) {
+  margin-top: 0.25rem;
+}
+
+.sidebar-projects-list .sidebar-btn:nth-child(3) {
+  margin-top: 0.25rem;
+}
+
+.sidebar-projects-list .sidebar-btn:nth-child(4) {
+  margin-top: 0.75rem;
+}
+
+.sidebar-projects-list .sidebar-btn:nth-child(n+5) {
+  margin-top: 0.25rem;
 }
 
 .sidebar-btn {
@@ -128,7 +152,7 @@ body {
 }
 
 .sidebar-divider {
-  margin: 0.75rem 0.875rem;
+  margin: 1rem;
   border: none;
   border-top: 1px solid rgba(255, 255, 255, 0.15);
 }
@@ -280,6 +304,10 @@ h1 {
 
 .view-title-icon--project {
   color: #10b981;
+}
+
+.view-title-icon--settings {
+  color: #71717a;
 }
 
 .sidebar-btn--nested {

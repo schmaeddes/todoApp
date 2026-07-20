@@ -141,6 +141,9 @@ export function getVisibleTasks(tasks, activeView, activeProject = null) {
     case 'projects':
       visible = [];
       break;
+    case 'settings':
+      visible = [];
+      break;
     case 'inbox':
     default:
       visible = tasks.filter(
@@ -159,7 +162,7 @@ export function getTodayTasks(tasks) {
 }
 
 export function getTodayTaskCounts(tasks) {
-  const todayTasks = getTodayTasks(tasks);
+  const todayTasks = getTodayTasks(tasks).filter((task) => !task.done);
 
   return todayTasks.reduce(
     (counts, task) => {
@@ -176,7 +179,9 @@ export function getTodayTaskCounts(tasks) {
 
 export function getProjectTaskCounts(tasks, slug) {
   const list = toProjectList(slug);
-  const projectTasks = tasks.filter((task) => task.list === list);
+  const projectTasks = tasks.filter(
+    (task) => task.list === list && !task.done,
+  );
 
   return projectTasks.reduce(
     (counts, task) => {
@@ -208,6 +213,8 @@ export function getViewTitle(activeView, activeProject = null, date = new Date()
       return 'Projects';
     case 'project':
       return activeProject?.name || 'Project';
+    case 'settings':
+      return 'Settings';
     case 'inbox':
     default:
       return 'Inbox';
