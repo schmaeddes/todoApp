@@ -51,6 +51,14 @@ export function getProjectTaskCount(tasks, slug) {
   return tasks.filter((task) => task.list === list).length;
 }
 
+export function prependProjectNameToTaskText(projectName, taskText) {
+  const prefix = `[${projectName}] `;
+  if (taskText.startsWith(prefix)) {
+    return taskText;
+  }
+  return `${prefix}${taskText}`;
+}
+
 export function getListLabel(list, projects = []) {
   if (list === 'inbox') return 'Inbox';
   if (list === 'today') return 'Today';

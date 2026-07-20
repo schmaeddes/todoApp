@@ -35,12 +35,14 @@ export default function TaskModal({
   onClose,
   onSave,
   onDelete,
+  onDeleteProject,
 }) {
   const textInputRef = useRef(null);
   const isAdd = mode === 'add';
   const isAddProject = mode === 'add-project';
   const isEditProject = mode === 'edit-project';
   const isProjectModal = isAddProject || isEditProject;
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [draft, setDraft] = useState(() =>
     isProjectModal
       ? { text: isEditProject ? project?.name || '' : '' }
@@ -50,6 +52,7 @@ export default function TaskModal({
   );
 
   useEffect(() => {
+    setShowDeleteConfirm(false);
     setDraft(
       isProjectModal
         ? { text: isEditProject ? project?.name || '' : '' }
@@ -69,6 +72,10 @@ export default function TaskModal({
   useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
+        if (showDeleteConfirm) {
+          setShowDeleteConfirm(false);
+          return;
+        }
         onClose();
       }
     }
@@ -80,7 +87,7 @@ export default function TaskModal({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [onClose]);
+  }, [onClose, showDeleteConfirm]);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -194,6 +201,17 @@ export default function TaskModal({
             </div>
           )}
 
+          {isEditProject && onDeleteProject && (
+            <button
+              type="button"
+              className="modal-delete-btn"
+              disabled={disabled}
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Delete project
+            </button>
+          )}
+
           {!isAdd && !isProjectModal && onDelete && (
             <button
               type="button"
@@ -205,6 +223,46 @@ export default function TaskModal({
             </button>
           )}
         </form>
+
+        {showDeleteConfirm && (
+          <div
+            className="confirm-dialog-backdrop"
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            <div
+              className="confirm-dialog"
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby="delete-project-title"
+              aria-describedby="delete-project-description"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <h3 id="delete-project-title">Delete project?</h3>
+              <p id="delete-project-description">
+                All remaining tasks in this project will be moved to trash. Their
+                titles will be prefixed with the project name.
+              </p>
+              <div className="confirm-dialog-actions">
+                <button
+                  type="button"
+                  className="confirm-dialog-cancel"
+                  disabled={disabled}
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="confirm-dialog-delete"
+                  disabled={disabled}
+                  onClick={onDeleteProject}
+                >
+                  Delete project
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

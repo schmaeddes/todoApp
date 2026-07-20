@@ -1,11 +1,14 @@
 import {
   createUniqueProjectSlug,
   normalizeProject,
+  prependProjectNameToTaskText,
+  toProjectList,
 } from '../projects';
 
 export default function useProjectStore({
   projects,
   commitProjects,
+  commitTasks,
   nextProjectId,
   setError,
   closeTaskModal,
@@ -38,5 +41,28 @@ export default function useProjectStore({
     setError(null);
   }
 
-  return { addProject, renameProject };
+  function deleteProject(projectId) {
+    const project = projects.find((item) => item.id === projectId);
+    if (!project) return;
+
+    const projectList = toProjectList(project.slug);
+
+    commitTasks((prev) =>
+      prev.map((task) =>
+        task.list === projectList
+          ? {
+              ...task,
+              list: 'trash',
+              text: prependProjectNameToTaskText(project.name, task.text),
+            }
+          : task,
+      ),
+    );
+
+    commitProjects((prev) => prev.filter((item) => item.id !== projectId));
+    closeTaskModal();
+    setError(null);
+  }
+
+  return { addProject, renameProject, deleteProject };
 }

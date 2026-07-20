@@ -329,6 +329,7 @@ h1 {
 }
 
 .modal {
+  position: relative;
   width: 100%;
   max-width: 48rem;
   background: var(--surface-elevated);
@@ -402,6 +403,72 @@ h1 {
 
 .modal-delete-btn:hover:not(:disabled) {
   background: var(--danger-hover-bg);
+}
+
+.confirm-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+}
+
+.confirm-dialog {
+  width: 100%;
+  max-width: 24rem;
+  padding: 1.25rem;
+  background: var(--surface-elevated);
+  border-radius: 10px;
+  box-shadow: var(--shadow-modal);
+}
+
+.confirm-dialog h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.confirm-dialog p {
+  margin-top: 0.5rem;
+  color: var(--text-subtle);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.confirm-dialog-cancel,
+.confirm-dialog-delete {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 6px;
+}
+
+.confirm-dialog-cancel {
+  background: transparent;
+  color: var(--text-primary);
+}
+
+.confirm-dialog-cancel:hover:not(:disabled) {
+  background: var(--surface);
+}
+
+.confirm-dialog-delete {
+  background: var(--danger);
+  color: #fff;
+}
+
+.confirm-dialog-delete:hover:not(:disabled) {
+  filter: brightness(0.95);
 }
 
 /* ── Form actions & pickers ── */

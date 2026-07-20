@@ -12,6 +12,7 @@ export default function AppModals({
   onClose,
   onSave,
   onDeleteTask,
+  onDeleteProject,
 }) {
   if (!isOpen || !mode) return null;
 
@@ -27,6 +28,7 @@ export default function AppModals({
       onClose={onClose}
       onSave={onSave}
       onDelete={onDeleteTask}
+      onDeleteProject={onDeleteProject}
     />
   );
 }

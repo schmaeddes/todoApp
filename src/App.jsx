@@ -48,9 +48,10 @@ export default function App() {
     emptyMessage,
   } = useActiveView({ tasks, projects, loading });
 
-  const { addProject, renameProject } = useProjectStore({
+  const { addProject, renameProject, deleteProject } = useProjectStore({
     projects,
     commitProjects,
+    commitTasks,
     nextProjectId,
     setError,
     closeTaskModal,
@@ -87,10 +88,11 @@ export default function App() {
     projects,
   );
 
-  const { handleSave, handleDeleteTask } = createTaskModalHandlers({
+  const { handleSave, handleDeleteTask, handleDeleteProject } = createTaskModalHandlers({
     modal,
     addProject,
     renameProject,
+    deleteProject,
     addTask,
     updateTask,
     moveTaskToTrash,
@@ -154,6 +156,7 @@ export default function App() {
         onClose={closeTaskModal}
         onSave={handleSave}
         onDeleteTask={mode === 'edit' ? handleDeleteTask : undefined}
+        onDeleteProject={mode === 'edit-project' ? handleDeleteProject : undefined}
       />
 
       <MoveToast toast={moveToast} />

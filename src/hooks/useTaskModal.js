@@ -65,6 +65,7 @@ export function createTaskModalHandlers({
   modal,
   addProject,
   renameProject,
+  deleteProject,
   addTask,
   updateTask,
   moveTaskToTrash,
@@ -98,7 +99,13 @@ export function createTaskModalHandlers({
     closeTaskModal();
   }
 
-  return { handleSave, handleDeleteTask };
+  function handleDeleteProject() {
+    if (modal?.type !== 'edit-project') return;
+
+    deleteProject(modal.projectId);
+  }
+
+  return { handleSave, handleDeleteTask, handleDeleteProject };
 }
 
 export default function useTaskModal() {
