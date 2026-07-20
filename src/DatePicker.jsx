@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toIsoDate } from './lib/dates';
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
@@ -6,35 +7,13 @@ function getMondayBasedWeekday(date) {
   return (date.getDay() + 6) % 7;
 }
 
-function toDateKey(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-export function formatDisplayDate(date) {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${day}.${month}`;
-}
-
-export function formatTitleDate(date) {
-  return date.toLocaleDateString(undefined, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
-
 export default function DatePicker({ selectedDate, onSelect }) {
   const initialView = selectedDate ?? new Date();
   const [viewYear, setViewYear] = useState(initialView.getFullYear());
   const [viewMonth, setViewMonth] = useState(initialView.getMonth());
 
-  const todayKey = toDateKey(new Date());
-  const selectedKey = selectedDate ? toDateKey(selectedDate) : null;
+  const todayKey = toIsoDate(new Date());
+  const selectedKey = selectedDate ? toIsoDate(selectedDate) : null;
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstWeekday = getMondayBasedWeekday(new Date(viewYear, viewMonth, 1));
@@ -59,7 +38,7 @@ export default function DatePicker({ selectedDate, onSelect }) {
   }
   for (let day = 1; day <= daysInMonth; day += 1) {
     const date = new Date(viewYear, viewMonth, day);
-    const key = toDateKey(date);
+    const key = toIsoDate(date);
     const isToday = key === todayKey;
     const isSelected = key === selectedKey;
     const isWeekend = getMondayBasedWeekday(date) >= 5;

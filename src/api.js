@@ -1,4 +1,4 @@
-import { normalizeTask } from './dates';
+import { normalizeTask } from './lib/tasks';
 import { normalizeProject } from './projects';
 
 export async function fetchTodos() {

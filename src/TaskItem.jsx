@@ -1,4 +1,4 @@
-import { formatIsoDate, isOverdue } from './dates';
+import { formatIsoDate, isOverdue } from './lib/dates';
 import { EditIcon, InboxIcon, RearrangeIcon, TodayIcon, TrashIcon, CalendarIcon, DueDateIcon } from './icons';
 
 export default function TaskItem({

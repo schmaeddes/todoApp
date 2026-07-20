@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  createNewTaskMetaForView,
   getTodayDate,
   parseIsoDate,
   toIsoDate,
-} from './dates';
+} from './lib/dates';
+import { createNewTaskMetaForView } from './lib/tasks';
 import TaskMetaActions from './TaskMetaActions';
 
 function createDraftFromTask(task) {

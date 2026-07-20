@@ -1,5 +1,5 @@
 import { useLocation, useParams } from 'react-router-dom';
-import { getVisibleTasks } from '../dates';
+import { getVisibleTasks } from '../lib/tasks';
 import { getEmptyMessage, resolveActiveView } from '../lib/views';
 
 export default function useActiveView({ tasks, projects, loading }) {

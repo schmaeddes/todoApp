@@ -1,34 +1,14 @@
-import { normalizeTags } from './tags';
-import { getProjectSlugFromList, isProjectList, toProjectList } from './projects';
-
-export function toIsoDate(date) {
-  if (!date) return null;
-  if (typeof date === 'string') {
-    return normalizeIsoDate(date);
-  }
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-export function normalizeIsoDate(value) {
-  if (!value) return null;
-  return String(value).slice(0, 10);
-}
-
-export function formatIsoDate(iso) {
-  if (!iso) return null;
-
-  const [, month, day] = iso.split('-');
-  return `${day.padStart(2, '0')}.${month.padStart(2, '0')}`;
-}
-
-export function isOverdue(iso) {
-  if (!iso) return false;
-  return iso < toIsoDate(new Date());
-}
+import { normalizeTags } from '../tags';
+import {
+  getProjectSlugFromList,
+  isProjectList,
+  toProjectList,
+} from '../projects';
+import {
+  getTodayDate,
+  normalizeIsoDate,
+  toIsoDate,
+} from './dates';
 
 export function resolveTaskPlacement({ list, scheduledDate, dueDate }) {
   const today = toIsoDate(new Date());
@@ -73,18 +53,6 @@ export function createEmptyTaskMeta() {
   };
 }
 
-export function getTodayDate() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
-}
-
-export function parseIsoDate(value) {
-  if (!value) return null;
-  const [year, month, day] = value.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
 export function createNewTaskMetaForView(activeView, activeProject = null) {
   const meta = createEmptyTaskMeta();
 
@@ -99,7 +67,7 @@ export function createNewTaskMetaForView(activeView, activeProject = null) {
   return meta;
 }
 
-export function sortTasksWithDoneLast(tasks) {
+function sortTasksWithDoneLast(tasks) {
   return tasks
     .map((task, index) => ({ task, index }))
     .sort((a, b) => {
@@ -109,6 +77,10 @@ export function sortTasksWithDoneLast(tasks) {
       return a.index - b.index;
     })
     .map(({ task }) => task);
+}
+
+export function getTodayTasks(tasks) {
+  return tasks.filter((task) => task.list === 'today');
 }
 
 export function getVisibleTasks(tasks, activeView, activeProject = null) {
@@ -155,70 +127,6 @@ export function getVisibleTasks(tasks, activeView, activeProject = null) {
   }
 
   return sortTasksWithDoneLast(visible);
-}
-
-export function getTodayTasks(tasks) {
-  return tasks.filter((task) => task.list === 'today');
-}
-
-export function getTodayTaskCounts(tasks) {
-  const todayTasks = getTodayTasks(tasks).filter((task) => !task.done);
-
-  return todayTasks.reduce(
-    (counts, task) => {
-      if (task.dueDate && isOverdue(task.dueDate)) {
-        counts.overdue += 1;
-      } else {
-        counts.onTime += 1;
-      }
-      return counts;
-    },
-    { onTime: 0, overdue: 0 },
-  );
-}
-
-export function getProjectTaskCounts(tasks, slug) {
-  const list = toProjectList(slug);
-  const projectTasks = tasks.filter(
-    (task) => task.list === list && !task.done,
-  );
-
-  return projectTasks.reduce(
-    (counts, task) => {
-      if (task.dueDate && isOverdue(task.dueDate)) {
-        counts.overdue += 1;
-      } else {
-        counts.onTime += 1;
-      }
-      return counts;
-    },
-    { onTime: 0, overdue: 0 },
-  );
-}
-
-export function getViewTitle(activeView, activeProject = null, date = new Date()) {
-  switch (activeView) {
-    case 'today':
-      return date.toLocaleDateString(undefined, {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-    case 'scheduled':
-      return 'Scheduled';
-    case 'trash':
-      return 'Trash';
-    case 'projects':
-      return 'Projects';
-    case 'project':
-      return activeProject?.name || 'Project';
-    case 'settings':
-      return 'Settings';
-    case 'inbox':
-    default:
-      return 'Inbox';
-  }
 }
 
 export function getTaskDestinationLabel(task, projects = []) {

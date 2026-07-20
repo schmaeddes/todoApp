@@ -1,6 +1,12 @@
 import express from 'express';
-import { normalizeProject, readProjects, writeProjects } from './projects.js';
-import { normalizeTodo, readTodos, writeTodos } from './todos.js';
+import {
+  normalizeProject,
+  normalizeTodo,
+  readProjects,
+  readTodos,
+  writeProjects,
+  writeTodos,
+} from './todos.js';
 
 const app = express();
 const PORT = 3001;

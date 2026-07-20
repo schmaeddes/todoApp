@@ -1,9 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import {
-  getProjectTaskCounts,
-  getTodayTaskCounts,
-  getVisibleTasks,
-} from '../dates';
+import { getProjectTaskCounts, getTodayTaskCounts } from '../lib/taskCounts';
+import { getVisibleTasks } from '../lib/tasks';
 import {
   InboxIcon,
   ProjectsIcon,

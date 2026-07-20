@@ -5,8 +5,8 @@ import {
   getVisibleTasks,
   normalizeTask,
   resolveTaskPlacement,
-  toIsoDate,
-} from '../dates';
+} from '../lib/tasks';
+import { toIsoDate } from '../lib/dates';
 import { normalizeTags } from '../tags';
 
 export default function useTodoStore({

@@ -1,13 +1,18 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { readProjects } from './projects.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TODOS_FILE = path.join(__dirname, '..', 'todos.md');
+const LEGACY_PROJECTS_FILE = path.join(__dirname, '..', 'projects.md');
 
 const TASK_LINE =
   /^- \[( |x)\] (.+?)(?: <!-- (.+?) -->)?\s*$/;
+
+const PROJECT_HEADER =
+  /^## (.+?)(?: <!-- (.+?) -->)?\s*$/;
+
+const LEGACY_PROJECT_LINE = /^- (.+?)(?: <!-- (.+?) -->)?\s*$/;
 
 const SYSTEM_SECTIONS = new Map([
   ['# Inbox', 'inbox'],
@@ -29,7 +34,7 @@ function slugifyProjectName(name) {
   return slug || 'project';
 }
 
-function parseMetadata(comment) {
+function parseTaskMetadata(comment) {
   const metadata = {};
 
   if (!comment) return metadata;
@@ -50,6 +55,20 @@ function parseMetadata(comment) {
   if (tagsMatch) {
     metadata.tags = tagsMatch[1].split(',').filter(Boolean);
   }
+
+  return metadata;
+}
+
+function parseProjectMetadata(comment) {
+  const metadata = {};
+
+  if (!comment) return metadata;
+
+  const idMatch = comment.match(/id:(\d+)/);
+  if (idMatch) metadata.id = parseInt(idMatch[1], 10);
+
+  const slugMatch = comment.match(/slug:([\w-]+)/);
+  if (slugMatch) metadata.slug = slugMatch[1];
 
   return metadata;
 }
@@ -91,7 +110,34 @@ function normalizeTodo(todo) {
   return normalized;
 }
 
-export { normalizeTodo };
+function normalizeProject(project) {
+  const name = String(project.name || '').trim();
+  return {
+    id: project.id,
+    name,
+    slug: project.slug || slugifyProjectName(name),
+  };
+}
+
+export { normalizeProject, normalizeTodo };
+
+function assignId(metadata, seenIds, nextId) {
+  let id = metadata.id ?? null;
+
+  if (!id || seenIds.has(id)) {
+    id = nextId;
+  }
+  while (seenIds.has(id)) {
+    id += 1;
+  }
+
+  seenIds.add(id);
+  return id;
+}
+
+function hasSectionStructure(content) {
+  return /^# (Inbox|Today|Scheduled|Trash|Projects)\s*$/m.test(content);
+}
 
 function listFromSection(section, projectSlug) {
   if (section === 'today') return 'today';
@@ -132,22 +178,71 @@ function formatTaskLine(todo) {
   return `- [${checkbox}] ${normalized.text} <!-- ${parts.join(' ')} -->`;
 }
 
-function hasSectionStructure(content) {
-  return /^# (Inbox|Today|Scheduled|Trash|Projects)\s*$/m.test(content);
+function formatProjectHeader(project) {
+  const normalized = normalizeProject(project);
+  return `## ${normalized.name} <!-- id:${normalized.id} slug:${normalized.slug} -->`;
 }
 
-function assignTodoId(metadata, seenIds, nextId) {
-  let id = metadata.id ?? null;
+function parseLegacyProjectsMd(content) {
+  const projects = [];
+  const seenIds = new Set();
+  let nextId = 1;
 
-  if (!id || seenIds.has(id)) {
-    id = nextId;
-  }
-  while (seenIds.has(id)) {
-    id += 1;
+  for (const line of content.split('\n')) {
+    const match = line.match(LEGACY_PROJECT_LINE);
+    if (!match) continue;
+
+    const name = match[1].trim();
+    const metadata = parseProjectMetadata(match[2]);
+    const id = assignId(metadata, seenIds, nextId);
+    nextId = Math.max(nextId, id + 1);
+
+    projects.push(
+      normalizeProject({
+        id,
+        name,
+        slug: metadata.slug || slugifyProjectName(name),
+      }),
+    );
   }
 
-  seenIds.add(id);
-  return id;
+  return projects;
+}
+
+function parseProjectsFromContent(content) {
+  const projects = [];
+  const seenIds = new Set();
+  let nextId = 1;
+  let inProjectsSection = false;
+
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+
+    if (trimmed === '# Projects') {
+      inProjectsSection = true;
+      continue;
+    }
+
+    if (!inProjectsSection) continue;
+
+    const match = trimmed.match(PROJECT_HEADER);
+    if (!match) continue;
+
+    const name = match[1].trim();
+    const metadata = parseProjectMetadata(match[2]);
+    const id = assignId(metadata, seenIds, nextId);
+    nextId = Math.max(nextId, id + 1);
+
+    projects.push(
+      normalizeProject({
+        id,
+        name,
+        slug: metadata.slug || slugifyProjectName(name),
+      }),
+    );
+  }
+
+  return projects;
 }
 
 function readTodosLegacy(content) {
@@ -161,8 +256,8 @@ function readTodosLegacy(content) {
 
     const done = match[1] === 'x';
     const text = match[2].trim();
-    const metadata = parseMetadata(match[3]);
-    const id = assignTodoId(metadata, seenIds, nextId);
+    const metadata = parseTaskMetadata(match[3]);
+    const id = assignId(metadata, seenIds, nextId);
     nextId = Math.max(nextId, id + 1);
 
     todos.push(
@@ -181,9 +276,7 @@ function readTodosLegacy(content) {
   return todos;
 }
 
-async function readTodosStructured(content) {
-  const projects = await readProjects();
-  const nameToSlug = new Map(projects.map((project) => [project.name, project.slug]));
+function readTodosStructured(content) {
   const todos = [];
   const seenIds = new Set();
   let nextId = 1;
@@ -200,9 +293,12 @@ async function readTodosStructured(content) {
     }
 
     if (section === 'projects' && trimmed.startsWith('## ')) {
-      const projectName = trimmed.slice(3).trim();
-      projectSlug =
-        nameToSlug.get(projectName) || slugifyProjectName(projectName);
+      const match = trimmed.match(PROJECT_HEADER);
+      if (!match) continue;
+
+      const projectName = match[1].trim();
+      const metadata = parseProjectMetadata(match[2]);
+      projectSlug = metadata.slug || slugifyProjectName(projectName);
       section = 'project';
       continue;
     }
@@ -212,8 +308,8 @@ async function readTodosStructured(content) {
 
     const done = match[1] === 'x';
     const text = match[2].trim();
-    const metadata = parseMetadata(match[3]);
-    const id = assignTodoId(metadata, seenIds, nextId);
+    const metadata = parseTaskMetadata(match[3]);
+    const id = assignId(metadata, seenIds, nextId);
     nextId = Math.max(nextId, id + 1);
 
     todos.push(
@@ -232,19 +328,7 @@ async function readTodosStructured(content) {
   return todos;
 }
 
-export async function readTodos() {
-  let content;
-
-  try {
-    content = await fs.readFile(TODOS_FILE, 'utf-8');
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      await writeTodos([]);
-      return [];
-    }
-    throw err;
-  }
-
+function parseTodosFromContent(content) {
   if (!hasSectionStructure(content)) {
     return readTodosLegacy(content);
   }
@@ -252,10 +336,10 @@ export async function readTodos() {
   return readTodosStructured(content);
 }
 
-export async function writeTodos(todos) {
-  const projects = await readProjects();
+async function writeTodosFile(todos, projects) {
   const todayIso = getTodayIso();
   const normalized = todos.map(normalizeTodo);
+  const normalizedProjects = projects.map(normalizeProject);
   const groups = {
     inbox: [],
     today: [],
@@ -298,9 +382,9 @@ export async function writeTodos(todos) {
 
   const writtenSlugs = new Set();
 
-  for (const project of projects) {
+  for (const project of normalizedProjects) {
     writtenSlugs.add(project.slug);
-    lines.push(`## ${project.name}`, '');
+    lines.push(formatProjectHeader(project), '');
     for (const task of groups.projects.get(project.slug) || []) {
       lines.push(formatTaskLine(task));
     }
@@ -309,7 +393,7 @@ export async function writeTodos(todos) {
 
   for (const [slug, sectionTasks] of groups.projects) {
     if (writtenSlugs.has(slug)) continue;
-    lines.push(`## ${slug}`, '');
+    lines.push(`## ${slug} <!-- slug:${slug} -->`, '');
     for (const task of sectionTasks) {
       lines.push(formatTaskLine(task));
     }
@@ -317,4 +401,77 @@ export async function writeTodos(todos) {
   }
 
   await fs.writeFile(TODOS_FILE, `${lines.join('\n').trimEnd()}\n`, 'utf-8');
+}
+
+async function migrateLegacyProjectsFile(content) {
+  let legacyContent;
+
+  try {
+    legacyContent = await fs.readFile(LEGACY_PROJECTS_FILE, 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return content;
+    throw err;
+  }
+
+  const legacyProjects = parseLegacyProjectsMd(legacyContent);
+  const projects = hasSectionStructure(content)
+    ? parseProjectsFromContent(content)
+    : [];
+  const existingSlugs = new Set(projects.map((project) => project.slug));
+  const merged = [...projects];
+
+  for (const project of legacyProjects) {
+    if (!existingSlugs.has(project.slug)) {
+      merged.push(project);
+      existingSlugs.add(project.slug);
+    }
+  }
+
+  const todos = parseTodosFromContent(content);
+  await writeTodosFile(todos, merged);
+  await fs.unlink(LEGACY_PROJECTS_FILE);
+
+  return fs.readFile(TODOS_FILE, 'utf-8');
+}
+
+async function readTodosContent() {
+  let content;
+
+  try {
+    content = await fs.readFile(TODOS_FILE, 'utf-8');
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      await writeTodosFile([], []);
+      return fs.readFile(TODOS_FILE, 'utf-8');
+    }
+    throw err;
+  }
+
+  return migrateLegacyProjectsFile(content);
+}
+
+export async function readProjects() {
+  const content = await readTodosContent();
+  return hasSectionStructure(content)
+    ? parseProjectsFromContent(content)
+    : [];
+}
+
+export async function readTodos() {
+  const content = await readTodosContent();
+  return parseTodosFromContent(content);
+}
+
+export async function writeTodos(todos) {
+  const content = await readTodosContent();
+  const projects = hasSectionStructure(content)
+    ? parseProjectsFromContent(content)
+    : [];
+  await writeTodosFile(todos, projects);
+}
+
+export async function writeProjects(projects) {
+  const content = await readTodosContent();
+  const todos = parseTodosFromContent(content);
+  await writeTodosFile(todos, projects);
 }

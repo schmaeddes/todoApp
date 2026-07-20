@@ -7,6 +7,7 @@ import {
   TodayIcon,
   TrashIcon,
 } from '../icons';
+import { formatTitleDate } from './dates';
 
 export const VIEW_ICONS = {
   inbox: InboxIcon,
@@ -50,6 +51,26 @@ export function getEmptyMessage(activeView) {
 
 export function canAddTask(activeView) {
   return activeView !== 'trash' && activeView !== 'projects' && activeView !== 'settings';
+}
+
+export function getViewTitle(activeView, activeProject = null, date = new Date()) {
+  switch (activeView) {
+    case 'today':
+      return formatTitleDate(date);
+    case 'scheduled':
+      return 'Scheduled';
+    case 'trash':
+      return 'Trash';
+    case 'projects':
+      return 'Projects';
+    case 'project':
+      return activeProject?.name || 'Project';
+    case 'settings':
+      return 'Settings';
+    case 'inbox':
+    default:
+      return 'Inbox';
+  }
 }
 
 export function resolveActiveView({ view, projectSlug, pathname, projects, loading }) {

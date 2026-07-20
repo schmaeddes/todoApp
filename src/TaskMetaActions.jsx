@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import DatePicker, { formatDisplayDate } from './DatePicker';
+import DatePicker from './DatePicker';
+import { formatDisplayDate } from './lib/dates';
 import { CalendarIcon, DueDateIcon, InboxIcon, ProjectIcon, TagIcon, TodayIcon } from './icons';
 import { getListLabel, isProjectList, toProjectList } from './projects';
 import { EISENHOWER_PRIORITIES, getTagLabel } from './tags';

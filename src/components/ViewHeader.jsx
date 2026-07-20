@@ -1,6 +1,5 @@
-import { getViewTitle } from '../dates';
+import { canAddTask, getViewIcon, getViewTitle } from '../lib/views';
 import { EditIcon } from '../icons';
-import { canAddTask, getViewIcon } from '../lib/views';
 
 export default function ViewHeader({
   activeView,
