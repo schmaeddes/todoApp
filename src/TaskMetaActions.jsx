@@ -41,7 +41,7 @@ function DateActionButton({
   }
 
   return (
-    <div className="calendar-picker-wrap" ref={wrapRef}>
+    <div className="picker-wrap picker-wrap--calendar" ref={wrapRef}>
       {date ? (
         <div
           className={
@@ -131,7 +131,7 @@ function LocationSelectButton({ list, onListChange, projects, disabled }) {
   ];
 
   return (
-    <div className="list-picker-wrap location-picker-wrap" ref={wrapRef}>
+    <div className="picker-wrap picker-wrap--labeled" ref={wrapRef}>
       <button
         type="button"
         className="add-action-btn add-action-btn-label add-action-btn-selected"
@@ -146,7 +146,7 @@ function LocationSelectButton({ list, onListChange, projects, disabled }) {
         {selectedLabel}
       </button>
       {open && (
-        <div className="list-dropdown location-dropdown" role="listbox" aria-label="Select location">
+        <div className="dropdown-panel list-dropdown dropdown-panel--end" role="listbox" aria-label="Select location">
           {options.map((option) => (
             <button
               key={option.value}
@@ -197,7 +197,7 @@ function TagSelectButton({ tags, onTagsChange, disabled }) {
   }
 
   return (
-    <div className="list-picker-wrap tag-picker-wrap" ref={wrapRef}>
+    <div className="picker-wrap picker-wrap--labeled" ref={wrapRef}>
       <button
         type="button"
         className={
@@ -215,7 +215,7 @@ function TagSelectButton({ tags, onTagsChange, disabled }) {
         {selectedLabel}
       </button>
       {open && (
-        <div className="list-dropdown tag-dropdown" role="listbox" aria-label="Select tag">
+        <div className="dropdown-panel list-dropdown dropdown-panel--end" role="listbox" aria-label="Select tag">
           {EISENHOWER_PRIORITIES.map((option) => (
             <button
               key={option.value}

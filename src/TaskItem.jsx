@@ -57,7 +57,7 @@ export default function TaskItem({
           <div className="task-actions">
             <button
               type="button"
-              className="move-btn"
+              className="task-action-btn task-action-btn--primary"
               title="Move to inbox"
               aria-label="Move to inbox"
               disabled={disabled}
@@ -67,7 +67,7 @@ export default function TaskItem({
             </button>
             <button
               type="button"
-              className="permanent-delete-btn"
+              className="task-action-btn task-action-btn--danger"
               title="Delete permanently"
               aria-label="Delete permanently"
               disabled={disabled}
@@ -81,7 +81,7 @@ export default function TaskItem({
             {showMoveToToday && (
               <button
                 type="button"
-                className="move-btn"
+                className="task-action-btn task-action-btn--primary"
                 title="Move to Today"
                 aria-label="Move to Today"
                 disabled={disabled}
@@ -92,7 +92,7 @@ export default function TaskItem({
             )}
             <button
               type="button"
-              className="edit-btn"
+              className="task-action-btn task-action-btn--primary"
               title="Edit"
               aria-label="Edit task"
               onClick={() => onEdit(task.id)}
@@ -100,7 +100,7 @@ export default function TaskItem({
               <EditIcon />
             </button>
             <span
-              className="rearrange-btn"
+              className="task-action-btn task-action-btn--grab"
               role="button"
               tabIndex={disabled ? -1 : 0}
               title="Drag to reorder"

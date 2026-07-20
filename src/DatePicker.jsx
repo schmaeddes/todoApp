@@ -82,7 +82,7 @@ export default function DatePicker({ selectedDate, onSelect }) {
   }
 
   return (
-    <div className="date-picker" role="dialog" aria-label="Choose a date">
+    <div className="dropdown-panel date-picker" role="dialog" aria-label="Choose a date">
       <div className="date-picker-header">
         <button
           type="button"
