@@ -9,6 +9,8 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Navigate to="/inbox" replace />} />
+        <Route path="/projects" element={<App />} />
+        <Route path="/projects/:projectSlug" element={<App />} />
         <Route path="/:view" element={<App />} />
       </Routes>
     </BrowserRouter>

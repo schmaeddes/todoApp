@@ -1,10 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink, Navigate, useParams } from 'react-router-dom';
-import { fetchTodos, saveTodos } from './api';
+import { NavLink, Navigate, useLocation, useParams } from 'react-router-dom';
+import { fetchProjects, fetchTodos, saveProjects, saveTodos } from './api';
 import { createEmptyTaskMeta, getTaskDestinationLabel, getTodayTaskCounts, getVisibleTasks, getViewTitle, normalizeTask, resolveTaskPlacement, toIsoDate } from './dates';
 import { normalizeTags } from './tags';
 import {
+  createUniqueProjectSlug,
+  getProjectTaskCount,
+  normalizeProject,
+} from './projects';
+import {
   InboxIcon,
+  ProjectsIcon,
   ScheduledIcon,
   TodayIcon,
   TrashIcon,
@@ -17,23 +23,30 @@ const VIEW_ICONS = {
   today: TodayIcon,
   scheduled: ScheduledIcon,
   trash: TrashIcon,
+  projects: ProjectsIcon,
+  project: ProjectsIcon,
 };
 
-const VALID_VIEWS = new Set(['inbox', 'today', 'scheduled', 'trash']);
+const VALID_VIEWS = new Set(['inbox', 'today', 'scheduled', 'trash', 'projects']);
 
 export default function App() {
-  const { view } = useParams();
-  const activeView = VALID_VIEWS.has(view) ? view : null;
+  const { view, projectSlug } = useParams();
+  const location = useLocation();
+  const isProjectsOverview = location.pathname === '/projects';
   const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [taskModal, setTaskModal] = useState(null);
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dragOverTaskId, setDragOverTaskId] = useState(null);
   const nextId = useRef(1);
+  const nextProjectId = useRef(1);
   const readyToSave = useRef(false);
   const skipNextSave = useRef(true);
+  const skipNextProjectSave = useRef(true);
   const saveQueueRef = useRef(Promise.resolve());
+  const projectSaveQueueRef = useRef(Promise.resolve());
   const dragStateRef = useRef(null);
   const toastFadeOutRef = useRef(null);
   const toastRemoveRef = useRef(null);
@@ -70,16 +83,20 @@ export default function App() {
 
   useEffect(() => {
     setTaskModal(null);
-  }, [activeView]);
+  }, [view, projectSlug]);
 
   useEffect(() => {
-    fetchTodos()
-      .then((data) => {
-        setTasks(data);
+    Promise.all([fetchTodos(), fetchProjects()])
+      .then(([todoData, projectData]) => {
+        setTasks(todoData);
+        setProjects(projectData);
         nextId.current =
-          data.reduce((max, task) => Math.max(max, task.id), 0) + 1;
+          todoData.reduce((max, task) => Math.max(max, task.id), 0) + 1;
+        nextProjectId.current =
+          projectData.reduce((max, project) => Math.max(max, project.id), 0) + 1;
         readyToSave.current = true;
         skipNextSave.current = true;
+        skipNextProjectSave.current = true;
       })
       .catch(() => setError('Could not load todos.'))
       .finally(() => setLoading(false));
@@ -95,6 +112,26 @@ export default function App() {
     saveQueueRef.current = saveQueueRef.current
       .then(() => saveTodos(nextTasks))
       .catch(() => setError('Could not save todos.'));
+  }
+
+  function persistProjects(nextProjects) {
+    if (!readyToSave.current) return;
+    if (skipNextProjectSave.current) {
+      skipNextProjectSave.current = false;
+      return;
+    }
+
+    projectSaveQueueRef.current = projectSaveQueueRef.current
+      .then(() => saveProjects(nextProjects))
+      .catch(() => setError('Could not save projects.'));
+  }
+
+  function commitProjects(updater) {
+    setProjects((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      persistProjects(next);
+      return next;
+    });
   }
 
   function commitTasks(updater) {
@@ -121,11 +158,26 @@ export default function App() {
 
     commitTasks((prev) => [...prev, newTask]);
 
-    const destination = getTaskDestinationLabel(newTask);
+    const destination = getTaskDestinationLabel(newTask, projects);
     if (destination !== 'Inbox') {
       showMoveToast(trimmed, destination);
     }
 
+    setError(null);
+  }
+
+  function addProject(name) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+
+    const slug = createUniqueProjectSlug(trimmed, projects);
+    const newProject = normalizeProject({
+      id: nextProjectId.current++,
+      name: trimmed,
+      slug,
+    });
+
+    commitProjects((prev) => [...prev, newProject]);
     setError(null);
   }
 
@@ -160,8 +212,8 @@ export default function App() {
         ),
       });
 
-      previousDestination = getTaskDestinationLabel(existing);
-      nextDestination = getTaskDestinationLabel(updated);
+      previousDestination = getTaskDestinationLabel(existing, projects);
+      nextDestination = getTaskDestinationLabel(updated, projects);
 
       return prev.map((task) => (task.id === id ? updated : task));
     });
@@ -203,7 +255,7 @@ export default function App() {
     commitTasks((prev) =>
       prev.map((item) => (item.id === id ? restored : item)),
     );
-    showMoveToast(restored.text, getTaskDestinationLabel(restored));
+    showMoveToast(restored.text, getTaskDestinationLabel(restored, projects));
     setError(null);
   }
 
@@ -230,13 +282,50 @@ export default function App() {
   }
 
   function toggleTask(id) {
-    commitTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
-    );
+    commitTasks((prev) => {
+      const taskIndex = prev.findIndex((task) => task.id === id);
+      if (taskIndex === -1) return prev;
+
+      const task = prev[taskIndex];
+      const willBeDone = !task.done;
+      const next = prev.map((item) =>
+        item.id === id ? { ...item, done: willBeDone } : item,
+      );
+
+      if (!willBeDone) {
+        return next;
+      }
+
+      const visibleIds = new Set(
+        getVisibleTasks(next, activeView, activeProject).map((item) => item.id),
+      );
+      if (!visibleIds.has(id)) {
+        return next;
+      }
+
+      const reordered = [...next];
+      const [movedTask] = reordered.splice(taskIndex, 1);
+
+      let insertIndex = reordered.length;
+      for (let i = reordered.length - 1; i >= 0; i -= 1) {
+        if (visibleIds.has(reordered[i].id)) {
+          insertIndex = i + 1;
+          break;
+        }
+      }
+
+      reordered.splice(insertIndex, 0, movedTask);
+      return reordered;
+    });
     setError(null);
   }
 
   function handleModalSave(data) {
+    if (taskModal === 'add-project') {
+      addProject(data.name);
+      return;
+    }
+
     if (taskModal === 'add') {
       addTask(data.text, data);
       return;
@@ -329,7 +418,20 @@ export default function App() {
     window.addEventListener('pointercancel', finishDrag);
   }
 
-  const visibleTasks = getVisibleTasks(tasks, activeView);
+  const activeProject = projectSlug
+    ? projects.find((project) => project.slug === projectSlug) ?? null
+    : null;
+
+  let activeView = null;
+  if (projectSlug) {
+    activeView = activeProject || loading ? 'project' : null;
+  } else if (isProjectsOverview) {
+    activeView = 'projects';
+  } else if (view && VALID_VIEWS.has(view)) {
+    activeView = view;
+  }
+
+  const visibleTasks = getVisibleTasks(tasks, activeView, activeProject);
   const remaining = visibleTasks.filter((task) => !task.done).length;
   const inboxCount = getVisibleTasks(tasks, 'inbox').length;
   const { onTime: todayOnTimeCount, overdue: todayOverdueCount } =
@@ -342,13 +444,21 @@ export default function App() {
         ? 'No tasks for today.'
         : activeView === 'scheduled'
           ? 'No scheduled tasks.'
-          : 'No tasks yet. Tap + to add one.';
+          : activeView === 'projects'
+            ? 'No projects yet. Tap Add Projekt to create one.'
+            : activeView === 'project'
+              ? 'No tasks yet. Tap + to add one.'
+              : 'No tasks yet. Tap + to add one.';
 
   const ViewIcon = VIEW_ICONS[activeView] || InboxIcon;
   const editingTask =
     typeof taskModal === 'number'
       ? tasks.find((task) => task.id === taskModal)
       : null;
+
+  if (!loading && projectSlug && !activeProject) {
+    return <Navigate to="/projects" replace />;
+  }
 
   if (!activeView) {
     return <Navigate to="/inbox" replace />;
@@ -414,6 +524,36 @@ export default function App() {
             <TrashIcon />
             Trash
           </NavLink>
+          <hr className="sidebar-divider" />
+          <NavLink
+            to="/projects"
+            end
+            className={({ isActive }) =>
+              'sidebar-btn' + (isActive ? ' active' : '')
+            }
+          >
+            <ProjectsIcon />
+            Projects
+          </NavLink>
+          {projects.map((project) => {
+            const projectCount = getProjectTaskCount(tasks, project.slug);
+
+            return (
+              <NavLink
+                key={project.id}
+                to={`/projects/${project.slug}`}
+                className={({ isActive }) =>
+                  'sidebar-btn sidebar-btn--nested' +
+                  (isActive ? ' active' : '')
+                }
+              >
+                {project.name}
+                {projectCount > 0 && (
+                  <span className="sidebar-count">{projectCount}</span>
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
       </aside>
 
@@ -423,9 +563,20 @@ export default function App() {
             <span className={`view-title-icon view-title-icon--${activeView}`}>
               <ViewIcon />
             </span>
-            {getViewTitle(activeView)}
+            {getViewTitle(activeView, activeProject)}
           </h1>
-          {activeView !== 'trash' && (
+          {activeView === 'projects' ? (
+            <button
+              type="button"
+              className="add-toggle-btn add-toggle-btn--labeled"
+              title="Add Projekt"
+              aria-label="Add Projekt"
+              onClick={() => setTaskModal('add-project')}
+              disabled={loading}
+            >
+              Add Projekt
+            </button>
+          ) : activeView !== 'trash' ? (
             <button
               type="button"
               className="add-toggle-btn"
@@ -436,7 +587,7 @@ export default function App() {
             >
               +
             </button>
-          )}
+          ) : null}
         </header>
 
         {error && <p className="error">{error}</p>}
@@ -482,11 +633,21 @@ export default function App() {
         )}
       </main>
 
-      {taskModal && (taskModal === 'add' || editingTask) && (
+      {taskModal &&
+        (taskModal === 'add' ||
+          taskModal === 'add-project' ||
+          editingTask) && (
         <TaskModal
-          mode={taskModal === 'add' ? 'add' : 'edit'}
+          mode={
+            taskModal === 'add-project'
+              ? 'add-project'
+              : taskModal === 'add'
+                ? 'add'
+                : 'edit'
+          }
           task={editingTask}
           activeView={activeView}
+          activeProject={activeProject}
           disabled={loading}
           onClose={closeTaskModal}
           onSave={handleModalSave}

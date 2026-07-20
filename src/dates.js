@@ -1,4 +1,5 @@
 import { normalizeTags } from './tags';
+import { getProjectSlugFromList, isProjectList, toProjectList } from './projects';
 
 export function toIsoDate(date) {
   if (!date) return null;
@@ -35,8 +36,8 @@ export function resolveTaskPlacement({ list, scheduledDate, dueDate }) {
   const due = normalizeIsoDate(dueDate);
   const resolvedList = list || 'inbox';
 
-  if (resolvedList === 'trash') {
-    return { list: 'trash', scheduledDate: schedule };
+  if (resolvedList === 'trash' || isProjectList(resolvedList)) {
+    return { list: resolvedList, scheduledDate: schedule };
   }
 
   if (schedule === today || (due && due <= today)) {
@@ -84,11 +85,13 @@ export function parseIsoDate(value) {
   return new Date(year, month - 1, day);
 }
 
-export function createNewTaskMetaForView(activeView) {
+export function createNewTaskMetaForView(activeView, activeProject = null) {
   const meta = createEmptyTaskMeta();
 
   if (activeView === 'today') {
     meta.list = 'today';
+  } else if (activeView === 'project' && activeProject) {
+    meta.list = toProjectList(activeProject.slug);
   } else if (activeView === 'scheduled') {
     meta.scheduledDate = getTodayDate();
   }
@@ -96,28 +99,59 @@ export function createNewTaskMetaForView(activeView) {
   return meta;
 }
 
-export function getVisibleTasks(tasks, activeView) {
+export function sortTasksWithDoneLast(tasks) {
+  return tasks
+    .map((task, index) => ({ task, index }))
+    .sort((a, b) => {
+      if (a.task.done !== b.task.done) {
+        return a.task.done ? 1 : -1;
+      }
+      return a.index - b.index;
+    })
+    .map(({ task }) => task);
+}
+
+export function getVisibleTasks(tasks, activeView, activeProject = null) {
   const today = toIsoDate(new Date());
+  let visible;
 
   switch (activeView) {
     case 'trash':
-      return tasks.filter((task) => task.list === 'trash');
+      visible = tasks.filter((task) => task.list === 'trash');
+      break;
     case 'scheduled':
-      return tasks.filter(
+      visible = tasks.filter(
         (task) =>
           task.list !== 'trash' &&
+          !isProjectList(task.list) &&
           task.scheduledDate &&
           task.scheduledDate > today,
       );
+      break;
     case 'today':
-      return getTodayTasks(tasks);
+      visible = getTodayTasks(tasks);
+      break;
+    case 'project':
+      visible = tasks.filter(
+        (task) =>
+          activeProject &&
+          task.list === toProjectList(activeProject.slug),
+      );
+      break;
+    case 'projects':
+      visible = [];
+      break;
     case 'inbox':
     default:
-      return tasks.filter(
+      visible = tasks.filter(
         (task) =>
-          (task.list || 'inbox') === 'inbox' && !task.scheduledDate,
+          (task.list || 'inbox') === 'inbox' &&
+          !task.scheduledDate &&
+          !isProjectList(task.list),
       );
   }
+
+  return sortTasksWithDoneLast(visible);
 }
 
 export function getTodayTasks(tasks) {
@@ -140,7 +174,7 @@ export function getTodayTaskCounts(tasks) {
   );
 }
 
-export function getViewTitle(activeView, date = new Date()) {
+export function getViewTitle(activeView, activeProject = null, date = new Date()) {
   switch (activeView) {
     case 'today':
       return date.toLocaleDateString(undefined, {
@@ -153,15 +187,25 @@ export function getViewTitle(activeView, date = new Date()) {
       return 'Scheduled';
     case 'trash':
       return 'Trash';
+    case 'projects':
+      return 'Projects';
+    case 'project':
+      return activeProject?.name || 'Project';
     case 'inbox':
     default:
       return 'Inbox';
   }
 }
 
-export function getTaskDestinationLabel(task) {
+export function getTaskDestinationLabel(task, projects = []) {
   if (task.list === 'trash') return 'Trash';
   if (task.list === 'today') return 'Today';
+
+  if (isProjectList(task.list)) {
+    const slug = getProjectSlugFromList(task.list);
+    const project = projects.find((item) => item.slug === slug);
+    return project?.name || 'Project';
+  }
 
   const today = toIsoDate(new Date());
   if (task.scheduledDate === today) return 'Today';

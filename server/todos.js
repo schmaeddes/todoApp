@@ -16,7 +16,7 @@ function parseMetadata(comment) {
   const idMatch = comment.match(/id:(\d+)/);
   if (idMatch) metadata.id = parseInt(idMatch[1], 10);
 
-  const listMatch = comment.match(/list:(\w+)/);
+  const listMatch = comment.match(/list:([\w:-]+)/);
   if (listMatch) metadata.list = listMatch[1];
 
   const scheduleMatch = comment.match(/schedule:(\d{4}-\d{2}-\d{2})/);
@@ -49,7 +49,7 @@ function normalizeTodo(todo) {
     tags: Array.isArray(todo.tags) ? todo.tags : [],
   };
 
-  if (normalized.list === 'trash') {
+  if (normalized.list === 'trash' || normalized.list.startsWith('project:')) {
     return normalized;
   }
 

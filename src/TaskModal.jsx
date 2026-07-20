@@ -5,6 +5,7 @@ import {
   parseIsoDate,
   toIsoDate,
 } from './dates';
+import { toProjectList } from './projects';
 import TaskMetaActions from './TaskMetaActions';
 
 function createDraftFromTask(task) {
@@ -17,9 +18,9 @@ function createDraftFromTask(task) {
   };
 }
 
-function createAddDraft(activeView) {
+function createAddDraft(activeView, activeProject = null) {
   return {
-    ...createNewTaskMetaForView(activeView),
+    ...createNewTaskMetaForView(activeView, activeProject),
     text: '',
   };
 }
@@ -28,6 +29,7 @@ export default function TaskModal({
   mode,
   task,
   activeView,
+  activeProject = null,
   disabled,
   onClose,
   onSave,
@@ -35,22 +37,27 @@ export default function TaskModal({
 }) {
   const textInputRef = useRef(null);
   const isAdd = mode === 'add';
+  const isAddProject = mode === 'add-project';
   const [draft, setDraft] = useState(() =>
-    isAdd ? createAddDraft(activeView) : createDraftFromTask(task),
+    isAddProject ? { text: '' } : isAdd ? createAddDraft(activeView, activeProject) : createDraftFromTask(task),
   );
 
   useEffect(() => {
     setDraft(
-      isAdd ? createAddDraft(activeView) : createDraftFromTask(task),
+      isAddProject
+        ? { text: '' }
+        : isAdd
+          ? createAddDraft(activeView, activeProject)
+          : createDraftFromTask(task),
     );
-  }, [mode, task, activeView, isAdd]);
+  }, [mode, task, activeView, activeProject, isAdd, isAddProject]);
 
   useEffect(() => {
     textInputRef.current?.focus();
-    if (!isAdd) {
+    if (!isAdd && !isAddProject) {
       textInputRef.current?.select();
     }
-  }, [isAdd]);
+  }, [isAdd, isAddProject]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -74,6 +81,13 @@ export default function TaskModal({
     const trimmed = draft.text.trim();
     if (!trimmed) return;
 
+    if (isAddProject) {
+      onSave({ name: trimmed });
+      setDraft({ text: '' });
+      requestAnimationFrame(() => textInputRef.current?.focus());
+      return;
+    }
+
     let list = draft.list || 'inbox';
     let scheduledDate = draft.scheduledDate;
 
@@ -81,6 +95,8 @@ export default function TaskModal({
       if (activeView === 'today') {
         list = 'today';
         scheduledDate = null;
+      } else if (activeView === 'project' && activeProject) {
+        list = toProjectList(activeProject.slug);
       } else if (activeView === 'scheduled') {
         scheduledDate = scheduledDate || getTodayDate();
       }
@@ -95,7 +111,7 @@ export default function TaskModal({
     });
 
     if (isAdd) {
-      setDraft(createAddDraft(activeView));
+      setDraft(createAddDraft(activeView, activeProject));
       requestAnimationFrame(() => textInputRef.current?.focus());
     }
   }
@@ -103,7 +119,7 @@ export default function TaskModal({
   return (
     <div
       className="modal-backdrop"
-      onClick={isAdd ? undefined : onClose}
+      onClick={isAdd || isAddProject ? undefined : onClose}
     >
       <div
         className="modal"
@@ -113,7 +129,9 @@ export default function TaskModal({
         onClick={(event) => event.stopPropagation()}
       >
         <header className="modal-header">
-          <h2 id="task-modal-title">{isAdd ? 'Add task' : 'Edit task'}</h2>
+          <h2 id="task-modal-title">
+            {isAddProject ? 'Add project' : isAdd ? 'Add task' : 'Edit task'}
+          </h2>
           <button
             type="button"
             className="modal-close-btn"
@@ -129,7 +147,9 @@ export default function TaskModal({
             ref={textInputRef}
             className="modal-input"
             type="text"
-            placeholder="What needs to be done?"
+            placeholder={
+              isAddProject ? 'What is the project called?' : 'What needs to be done?'
+            }
             value={draft.text}
             autoComplete="off"
             disabled={disabled}
@@ -138,21 +158,31 @@ export default function TaskModal({
             }
           />
 
-          <TaskMetaActions
-            scheduledDate={draft.scheduledDate}
-            onScheduledDateChange={(scheduledDate) =>
-              setDraft((prev) => ({ ...prev, scheduledDate }))
-            }
-            dueDate={draft.dueDate}
-            onDueDateChange={(dueDate) =>
-              setDraft((prev) => ({ ...prev, dueDate }))
-            }
-            tags={draft.tags}
-            onTagsChange={(tags) => setDraft((prev) => ({ ...prev, tags }))}
-            disabled={disabled}
-            showSubmit
-            submitLabel={isAdd ? 'Add' : 'Save'}
-          />
+          {!isAddProject && (
+            <TaskMetaActions
+              scheduledDate={draft.scheduledDate}
+              onScheduledDateChange={(scheduledDate) =>
+                setDraft((prev) => ({ ...prev, scheduledDate }))
+              }
+              dueDate={draft.dueDate}
+              onDueDateChange={(dueDate) =>
+                setDraft((prev) => ({ ...prev, dueDate }))
+              }
+              tags={draft.tags}
+              onTagsChange={(tags) => setDraft((prev) => ({ ...prev, tags }))}
+              disabled={disabled}
+              showSubmit
+              submitLabel={isAdd ? 'Add' : 'Save'}
+            />
+          )}
+
+          {isAddProject && (
+            <div className="add-form-actions">
+              <button type="submit" className="add-submit-btn" disabled={disabled}>
+                Add
+              </button>
+            </div>
+          )}
 
           {!isAdd && onDelete && (
             <button
