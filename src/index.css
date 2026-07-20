@@ -241,6 +241,7 @@ body {
 /* ── Main layout ── */
 
 .main {
+  position: relative;
   flex: 1;
   min-width: 0;
   padding: 3rem 2rem;
@@ -344,7 +345,7 @@ h1 {
 /* ── Modal ── */
 
 .modal-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 200;
   display: flex;
@@ -408,8 +409,13 @@ h1 {
   border: 1px solid var(--border-strong);
   border-radius: 8px;
   font-size: 1rem;
-  background: var(--surface-elevated);
+  color: var(--text-primary);
+  background: var(--surface);
   outline: none;
+}
+
+.modal-input::placeholder {
+  color: var(--text-muted);
 }
 
 .modal-input:focus {

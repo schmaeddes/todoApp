@@ -151,22 +151,22 @@ export default function App() {
             onRearrangeStart={handleRearrangeStart}
           />
         )}
-      </main>
 
-      <AppModals
-        isOpen={isOpen}
-        mode={mode}
-        editingTask={editingTask}
-        editingProject={editingProject}
-        activeView={activeView}
-        activeProject={activeProject}
-        projects={projects}
-        loading={loading}
-        onClose={closeTaskModal}
-        onSave={handleSave}
-        onDeleteTask={mode === 'edit' ? handleDeleteTask : undefined}
-        onDeleteProject={mode === 'edit-project' ? handleDeleteProject : undefined}
-      />
+        <AppModals
+          isOpen={isOpen}
+          mode={mode}
+          editingTask={editingTask}
+          editingProject={editingProject}
+          activeView={activeView}
+          activeProject={activeProject}
+          projects={projects}
+          loading={loading}
+          onClose={closeTaskModal}
+          onSave={handleSave}
+          onDeleteTask={mode === 'edit' ? handleDeleteTask : undefined}
+          onDeleteProject={mode === 'edit-project' ? handleDeleteProject : undefined}
+        />
+      </main>
 
       <MoveToast toast={moveToast} />
     </div>
