@@ -74,14 +74,21 @@ export default function TaskModal({
     const trimmed = draft.text.trim();
     if (!trimmed) return;
 
+    let list = draft.list || 'inbox';
     let scheduledDate = draft.scheduledDate;
-    if (isAdd && (activeView === 'today' || activeView === 'scheduled')) {
-      scheduledDate = scheduledDate || getTodayDate();
+
+    if (isAdd) {
+      if (activeView === 'today') {
+        list = 'today';
+        scheduledDate = null;
+      } else if (activeView === 'scheduled') {
+        scheduledDate = scheduledDate || getTodayDate();
+      }
     }
 
     onSave({
       text: trimmed,
-      list: draft.list || 'inbox',
+      list,
       scheduledDate: toIsoDate(scheduledDate),
       dueDate: toIsoDate(draft.dueDate),
       tags: draft.tags,

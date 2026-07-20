@@ -2,6 +2,9 @@ import { normalizeTags } from './tags';
 
 export function toIsoDate(date) {
   if (!date) return null;
+  if (typeof date === 'string') {
+    return normalizeIsoDate(date);
+  }
 
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -26,8 +29,25 @@ export function isOverdue(iso) {
   return iso < toIsoDate(new Date());
 }
 
+export function resolveTaskPlacement({ list, scheduledDate, dueDate }) {
+  const today = toIsoDate(new Date());
+  const schedule = normalizeIsoDate(scheduledDate);
+  const due = normalizeIsoDate(dueDate);
+  const resolvedList = list || 'inbox';
+
+  if (resolvedList === 'trash') {
+    return { list: 'trash', scheduledDate: schedule };
+  }
+
+  if (schedule === today || (due && due <= today)) {
+    return { list: 'today', scheduledDate: schedule };
+  }
+
+  return { list: resolvedList, scheduledDate: schedule };
+}
+
 export function normalizeTask(task) {
-  return {
+  const normalized = {
     id: task.id,
     text: String(task.text || '').trim(),
     done: Boolean(task.done),
@@ -35,6 +55,11 @@ export function normalizeTask(task) {
     scheduledDate: normalizeIsoDate(task.scheduledDate),
     dueDate: normalizeIsoDate(task.dueDate),
     tags: normalizeTags(task.tags),
+  };
+
+  return {
+    ...normalized,
+    ...resolveTaskPlacement(normalized),
   };
 }
 
@@ -62,19 +87,13 @@ export function parseIsoDate(value) {
 export function createNewTaskMetaForView(activeView) {
   const meta = createEmptyTaskMeta();
 
-  if (activeView === 'today' || activeView === 'scheduled') {
+  if (activeView === 'today') {
+    meta.list = 'today';
+  } else if (activeView === 'scheduled') {
     meta.scheduledDate = getTodayDate();
   }
 
   return meta;
-}
-
-export function syncScheduleWithList(list, scheduledDate) {
-  if (list === 'today') {
-    return getTodayDate();
-  }
-
-  return scheduledDate ?? null;
 }
 
 export function getVisibleTasks(tasks, activeView) {
@@ -91,12 +110,7 @@ export function getVisibleTasks(tasks, activeView) {
           task.scheduledDate > today,
       );
     case 'today':
-      return tasks.filter(
-        (task) =>
-          task.list !== 'trash' &&
-          task.scheduledDate &&
-          task.scheduledDate <= today,
-      );
+      return getTodayTasks(tasks);
     case 'inbox':
     default:
       return tasks.filter(
@@ -104,6 +118,26 @@ export function getVisibleTasks(tasks, activeView) {
           (task.list || 'inbox') === 'inbox' && !task.scheduledDate,
       );
   }
+}
+
+export function getTodayTasks(tasks) {
+  return tasks.filter((task) => task.list === 'today');
+}
+
+export function getTodayTaskCounts(tasks) {
+  const todayTasks = getTodayTasks(tasks);
+
+  return todayTasks.reduce(
+    (counts, task) => {
+      if (task.dueDate && isOverdue(task.dueDate)) {
+        counts.overdue += 1;
+      } else {
+        counts.onTime += 1;
+      }
+      return counts;
+    },
+    { onTime: 0, overdue: 0 },
+  );
 }
 
 export function getViewTitle(activeView, date = new Date()) {
@@ -127,12 +161,14 @@ export function getViewTitle(activeView, date = new Date()) {
 
 export function getTaskDestinationLabel(task) {
   if (task.list === 'trash') return 'Trash';
+  if (task.list === 'today') return 'Today';
 
   const today = toIsoDate(new Date());
-  if (task.scheduledDate) {
-    return task.scheduledDate > today ? 'Scheduled' : 'Today';
+  if (task.scheduledDate === today) return 'Today';
+  if (task.dueDate && task.dueDate <= today) return 'Today';
+  if (task.scheduledDate && task.scheduledDate > today) {
+    return 'Scheduled';
   }
 
-  if (task.list === 'today') return 'Today';
   return 'Inbox';
 }

@@ -95,9 +95,36 @@ body {
   line-height: 1;
 }
 
+.sidebar-counts {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-left: auto;
+}
+
+.sidebar-counts .sidebar-count {
+  margin-left: 0;
+}
+
+.sidebar-count-separator {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1;
+}
+
+.sidebar-count--overdue {
+  color: #f87171;
+}
+
 .sidebar-btn:hover .sidebar-count,
 .sidebar-btn.active .sidebar-count {
   color: rgba(255, 255, 255, 0.9);
+}
+
+.sidebar-btn:hover .sidebar-count--overdue,
+.sidebar-btn.active .sidebar-count--overdue {
+  color: #fca5a5;
 }
 
 .main {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Navigate, useParams } from 'react-router-dom';
 import { fetchTodos, saveTodos } from './api';
-import { createEmptyTaskMeta, getTaskDestinationLabel, getTodayDate, getVisibleTasks, getViewTitle, syncScheduleWithList, toIsoDate } from './dates';
+import { createEmptyTaskMeta, getTaskDestinationLabel, getTodayTaskCounts, getVisibleTasks, getViewTitle, normalizeTask, resolveTaskPlacement, toIsoDate } from './dates';
 import { normalizeTags } from './tags';
 import {
   InboxIcon,
@@ -109,17 +109,15 @@ export default function App() {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    const newTask = {
+    const newTask = normalizeTask({
       id: nextId.current++,
       text: trimmed,
       done: false,
       list: meta.list || 'inbox',
-      scheduledDate: toIsoDate(
-        syncScheduleWithList(meta.list || 'inbox', meta.scheduledDate),
-      ),
+      scheduledDate: toIsoDate(meta.scheduledDate),
       dueDate: toIsoDate(meta.dueDate),
       tags: normalizeTags(meta.tags),
-    };
+    });
 
     commitTasks((prev) => [...prev, newTask]);
 
@@ -144,20 +142,23 @@ export default function App() {
       const scheduledDate =
         'scheduledDate' in updates
           ? updates.scheduledDate
-          : list === 'today'
-            ? toIsoDate(getTodayDate())
-            : existing.scheduledDate;
+          : existing.scheduledDate;
 
-      updated = {
+      const dueDate =
+        'dueDate' in updates ? updates.dueDate : existing.dueDate;
+
+      const placement = resolveTaskPlacement({ list, scheduledDate, dueDate });
+
+      updated = normalizeTask({
         ...existing,
         ...updates,
-        list,
-        scheduledDate,
-        dueDate: 'dueDate' in updates ? updates.dueDate : existing.dueDate,
+        list: placement.list,
+        scheduledDate: placement.scheduledDate,
+        dueDate,
         tags: normalizeTags(
           'tags' in updates ? updates.tags : existing.tags,
         ),
-      };
+      });
 
       previousDestination = getTaskDestinationLabel(existing);
       nextDestination = getTaskDestinationLabel(updated);
@@ -203,6 +204,19 @@ export default function App() {
       prev.map((item) => (item.id === id ? restored : item)),
     );
     showMoveToast(restored.text, getTaskDestinationLabel(restored));
+    setError(null);
+  }
+
+  function moveTaskToToday(id) {
+    const task = tasks.find((item) => item.id === id);
+    if (!task) return;
+
+    const updated = { ...task, list: 'today' };
+
+    commitTasks((prev) =>
+      prev.map((item) => (item.id === id ? updated : item)),
+    );
+    showMoveToast(updated.text, 'Today');
     setError(null);
   }
 
@@ -318,7 +332,8 @@ export default function App() {
   const visibleTasks = getVisibleTasks(tasks, activeView);
   const remaining = visibleTasks.filter((task) => !task.done).length;
   const inboxCount = getVisibleTasks(tasks, 'inbox').length;
-  const todayCount = getVisibleTasks(tasks, 'today').length;
+  const { onTime: todayOnTimeCount, overdue: todayOverdueCount } =
+    getTodayTaskCounts(tasks);
 
   const emptyMessage =
     activeView === 'trash'
@@ -363,8 +378,22 @@ export default function App() {
           >
             <TodayIcon />
             Today
-            {todayCount > 0 && (
-              <span className="sidebar-count">{todayCount}</span>
+            {(todayOnTimeCount > 0 || todayOverdueCount > 0) && (
+              <span className="sidebar-counts">
+                {todayOnTimeCount > 0 && (
+                  <span className="sidebar-count">{todayOnTimeCount}</span>
+                )}
+                {todayOnTimeCount > 0 && todayOverdueCount > 0 && (
+                  <span className="sidebar-count-separator" aria-hidden="true">
+                    |
+                  </span>
+                )}
+                {todayOverdueCount > 0 && (
+                  <span className="sidebar-count sidebar-count--overdue">
+                    {todayOverdueCount}
+                  </span>
+                )}
+              </span>
             )}
           </NavLink>
           <NavLink
@@ -427,6 +456,9 @@ export default function App() {
                 key={task.id}
                 task={task}
                 isTrashView={activeView === 'trash'}
+                showMoveToToday={
+                  activeView === 'inbox' || activeView === 'scheduled'
+                }
                 isDragging={draggedTaskId === task.id}
                 isDragOver={
                   dragOverTaskId === task.id && draggedTaskId !== task.id
@@ -435,6 +467,7 @@ export default function App() {
                 onEdit={handleEdit}
                 onToggle={toggleTask}
                 onMoveToInbox={moveTaskToInbox}
+                onMoveToToday={moveTaskToToday}
                 onDeletePermanently={deleteTaskPermanently}
                 onRearrangeStart={handleRearrangeStart}
               />

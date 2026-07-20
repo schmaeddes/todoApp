@@ -1,15 +1,17 @@
 import { formatIsoDate, isOverdue } from './dates';
-import { EditIcon, InboxIcon, RearrangeIcon, TrashIcon, CalendarIcon, DueDateIcon } from './icons';
+import { EditIcon, InboxIcon, RearrangeIcon, TodayIcon, TrashIcon, CalendarIcon, DueDateIcon } from './icons';
 
 export default function TaskItem({
   task,
   isTrashView = false,
+  showMoveToToday = false,
   isDragging = false,
   isDragOver = false,
   disabled,
   onEdit,
   onToggle,
   onMoveToInbox,
+  onMoveToToday,
   onDeletePermanently,
   onRearrangeStart,
 }) {
@@ -76,6 +78,18 @@ export default function TaskItem({
           </div>
         ) : (
           <div className="task-actions">
+            {showMoveToToday && (
+              <button
+                type="button"
+                className="move-btn"
+                title="Move to Today"
+                aria-label="Move to Today"
+                disabled={disabled}
+                onClick={() => onMoveToToday(task.id)}
+              >
+                <TodayIcon />
+              </button>
+            )}
             <button
               type="button"
               className="edit-btn"

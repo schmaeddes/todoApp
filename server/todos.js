@@ -39,7 +39,7 @@ function normalizeIsoDate(value) {
 }
 
 function normalizeTodo(todo) {
-  return {
+  const normalized = {
     id: todo.id,
     text: String(todo.text || '').trim(),
     done: Boolean(todo.done),
@@ -48,6 +48,22 @@ function normalizeTodo(todo) {
     dueDate: normalizeIsoDate(todo.dueDate),
     tags: Array.isArray(todo.tags) ? todo.tags : [],
   };
+
+  if (normalized.list === 'trash') {
+    return normalized;
+  }
+
+  const today = new Date();
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  if (
+    normalized.scheduledDate === todayIso ||
+    (normalized.dueDate && normalized.dueDate <= todayIso)
+  ) {
+    normalized.list = 'today';
+  }
+
+  return normalized;
 }
 
 export { normalizeTodo };
