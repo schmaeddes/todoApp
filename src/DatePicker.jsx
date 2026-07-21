@@ -14,6 +14,10 @@ export default function DatePicker({ selectedDate, onSelect }) {
 
   const todayKey = toIsoDate(new Date());
   const selectedKey = selectedDate ? toIsoDate(selectedDate) : null;
+  const today = new Date();
+  const canGoPrev =
+    viewYear > today.getFullYear() ||
+    (viewYear === today.getFullYear() && viewMonth > today.getMonth());
 
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const firstWeekday = getMondayBasedWeekday(new Date(viewYear, viewMonth, 1));
@@ -42,16 +46,19 @@ export default function DatePicker({ selectedDate, onSelect }) {
     const isToday = key === todayKey;
     const isSelected = key === selectedKey;
     const isWeekend = getMondayBasedWeekday(date) >= 5;
+    const isDisabled = key < todayKey;
 
     cells.push(
       <button
         key={day}
         type="button"
+        disabled={isDisabled}
         className={
           'date-picker-day' +
           (isWeekend ? ' weekend' : '') +
           (isToday ? ' today' : '') +
-          (isSelected ? ' selected' : '')
+          (isSelected ? ' selected' : '') +
+          (isDisabled ? ' disabled' : '')
         }
         onClick={() => selectDay(day)}
       >
@@ -67,6 +74,7 @@ export default function DatePicker({ selectedDate, onSelect }) {
           type="button"
           className="date-picker-nav"
           aria-label="Previous month"
+          disabled={!canGoPrev}
           onClick={() => shiftMonth(-1)}
         >
           ‹

@@ -733,9 +733,14 @@ h1 {
   border-radius: 6px;
 }
 
-.date-picker-nav:hover {
+.date-picker-nav:hover:not(:disabled) {
   background: var(--surface);
   color: var(--text-primary);
+}
+
+.date-picker-nav:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .date-picker-weekdays {
@@ -785,8 +790,14 @@ h1 {
   color: var(--text-muted);
 }
 
-.date-picker-day:hover {
+.date-picker-day:hover:not(:disabled) {
   background: var(--surface);
+}
+
+.date-picker-day:disabled {
+  color: var(--text-muted);
+  opacity: 0.35;
+  cursor: default;
 }
 
 .date-picker-day.today:not(.selected) {

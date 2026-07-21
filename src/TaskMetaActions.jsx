@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import DatePicker from './DatePicker';
 import { formatDisplayDate } from './lib/dates';
-import { CalendarIcon, DueDateIcon, InboxIcon, ProjectIcon, TagIcon, TodayIcon } from './icons';
+import { CalendarIcon, DueDateIcon, InboxIcon, ProjectIcon, ScheduledIcon, TagIcon, TodayIcon } from './icons';
 import { getListLabel, isProjectList, toProjectList } from './projects';
+import { getDestinationSelectValue } from './lib/tasks';
 import { EISENHOWER_PRIORITIES, getTagLabel } from './tags';
 
 function DateActionButton({
@@ -93,10 +94,18 @@ function DateActionButton({
   );
 }
 
-function LocationSelectButton({ list, onListChange, projects, disabled }) {
+function LocationSelectButton({
+  list,
+  scheduledDate,
+  dueDate,
+  onListChange,
+  projects,
+  disabled,
+}) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
-  const selectedLabel = getListLabel(list, projects);
+  const selectedValue = getDestinationSelectValue({ list, scheduledDate, dueDate });
+  const selectedLabel = getListLabel(selectedValue, projects);
 
   useEffect(() => {
     if (!open) return;
@@ -117,14 +126,16 @@ function LocationSelectButton({ list, onListChange, projects, disabled }) {
   }
 
   function getIcon() {
-    if (list === 'today') return <TodayIcon />;
-    if (isProjectList(list)) return <ProjectIcon />;
+    if (selectedValue === 'today') return <TodayIcon />;
+    if (selectedValue === 'scheduled') return <ScheduledIcon />;
+    if (isProjectList(selectedValue)) return <ProjectIcon />;
     return <InboxIcon />;
   }
 
   const options = [
     { value: 'inbox', label: 'Inbox' },
     { value: 'today', label: 'Today' },
+    { value: 'scheduled', label: 'Scheduled' },
     ...projects.map((project) => ({
       value: toProjectList(project.slug),
       label: project.name,
@@ -153,10 +164,10 @@ function LocationSelectButton({ list, onListChange, projects, disabled }) {
               key={option.value}
               type="button"
               role="option"
-              aria-selected={list === option.value}
+              aria-selected={selectedValue === option.value}
               className={
                 'list-dropdown-option' +
-                (list === option.value ? ' selected' : '')
+                (selectedValue === option.value ? ' selected' : '')
               }
               onClick={() => handleSelect(option.value)}
             >
@@ -256,6 +267,8 @@ export default function TaskMetaActions({
     <div className="add-form-actions">
       <LocationSelectButton
         list={list}
+        scheduledDate={scheduledDate}
+        dueDate={dueDate}
         onListChange={onListChange}
         projects={projects}
         disabled={disabled}

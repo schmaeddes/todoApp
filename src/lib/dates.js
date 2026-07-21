@@ -47,6 +47,13 @@ export function getTodayDate() {
   return today;
 }
 
+export function getTomorrowDate() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  return tomorrow;
+}
+
 export function isOverdue(iso) {
   if (!iso) return false;
   return iso < toIsoDate(new Date());

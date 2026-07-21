@@ -6,6 +6,7 @@ import {
 } from '../projects';
 import {
   getTodayDate,
+  getTomorrowDate,
   normalizeIsoDate,
   toIsoDate,
 } from './dates';
@@ -58,10 +59,11 @@ export function createNewTaskMetaForView(activeView, activeProject = null) {
 
   if (activeView === 'today') {
     meta.list = 'today';
+    meta.scheduledDate = getTodayDate();
   } else if (activeView === 'project' && activeProject) {
     meta.list = toProjectList(activeProject.slug);
   } else if (activeView === 'scheduled') {
-    meta.scheduledDate = getTodayDate();
+    meta.scheduledDate = getTomorrowDate();
   }
 
   return meta;
@@ -127,6 +129,27 @@ export function getVisibleTasks(tasks, activeView, activeProject = null) {
   }
 
   return sortTasksWithDoneLast(visible);
+}
+
+export function getDestinationSelectValue({ list, scheduledDate, dueDate }) {
+  if (list === 'today') return 'today';
+
+  if (isProjectList(list)) {
+    return list;
+  }
+
+  const today = toIsoDate(new Date());
+  const schedule = normalizeIsoDate(scheduledDate);
+
+  if (schedule && schedule > today) {
+    return 'scheduled';
+  }
+
+  if (schedule === today || (dueDate && normalizeIsoDate(dueDate) <= today)) {
+    return 'today';
+  }
+
+  return 'inbox';
 }
 
 export function getTaskDestinationLabel(task, projects = []) {

@@ -62,6 +62,7 @@ export function prependProjectNameToTaskText(projectName, taskText) {
 export function getListLabel(list, projects = []) {
   if (list === 'inbox') return 'Inbox';
   if (list === 'today') return 'Today';
+  if (list === 'scheduled') return 'Scheduled';
 
   if (isProjectList(list)) {
     const slug = getProjectSlugFromList(list);

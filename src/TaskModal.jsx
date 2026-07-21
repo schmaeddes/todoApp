@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   getTodayDate,
+  getTomorrowDate,
   parseIsoDate,
   toIsoDate,
 } from './lib/dates';
-import { createNewTaskMetaForView } from './lib/tasks';
+import { createNewTaskMetaForView, getDestinationSelectValue } from './lib/tasks';
 import TaskMetaActions from './TaskMetaActions';
 
 function createDraftFromTask(task) {
@@ -104,9 +105,19 @@ export default function TaskModal({
       return;
     }
 
+    const destination = getDestinationSelectValue({
+      list: draft.list,
+      scheduledDate: draft.scheduledDate,
+      dueDate: draft.dueDate,
+    });
     let scheduledDate = draft.scheduledDate;
+    const todayIso = toIsoDate(new Date());
 
-    if (isAdd && activeView === 'scheduled' && !scheduledDate) {
+    if (destination === 'scheduled') {
+      if (!scheduledDate || toIsoDate(scheduledDate) <= todayIso) {
+        scheduledDate = getTomorrowDate();
+      }
+    } else if (destination === 'today' && !scheduledDate) {
       scheduledDate = getTodayDate();
     }
 
@@ -122,6 +133,61 @@ export default function TaskModal({
       setDraft(createAddDraft(activeView, activeProject));
       requestAnimationFrame(() => textInputRef.current?.focus());
     }
+  }
+
+  function handleListChange(nextList) {
+    setDraft((prev) => {
+      const todayIso = toIsoDate(new Date());
+      const currentSchedule = toIsoDate(prev.scheduledDate);
+
+      if (nextList === 'scheduled') {
+        return {
+          ...prev,
+          list: 'inbox',
+          scheduledDate:
+            currentSchedule && currentSchedule > todayIso
+              ? prev.scheduledDate
+              : getTomorrowDate(),
+        };
+      }
+
+      if (nextList === 'today') {
+        return {
+          ...prev,
+          list: 'today',
+          scheduledDate: getTodayDate(),
+        };
+      }
+
+      if (nextList === 'inbox') {
+        return {
+          ...prev,
+          list: 'inbox',
+          scheduledDate:
+            currentSchedule && currentSchedule > todayIso ? null : prev.scheduledDate,
+        };
+      }
+
+      return {
+        ...prev,
+        list: nextList,
+        scheduledDate:
+          currentSchedule && currentSchedule > todayIso ? null : prev.scheduledDate,
+      };
+    });
+  }
+
+  function handleScheduledDateChange(scheduledDate) {
+    setDraft((prev) => {
+      const todayIso = toIsoDate(new Date());
+      const nextSchedule = toIsoDate(scheduledDate);
+
+      if (nextSchedule && nextSchedule > todayIso) {
+        return { ...prev, scheduledDate, list: 'inbox' };
+      }
+
+      return { ...prev, scheduledDate };
+    });
   }
 
   return (
@@ -175,12 +241,10 @@ export default function TaskModal({
           {!isProjectModal && (
             <TaskMetaActions
               list={draft.list || 'inbox'}
-              onListChange={(list) => setDraft((prev) => ({ ...prev, list }))}
+              onListChange={handleListChange}
               projects={projects}
               scheduledDate={draft.scheduledDate}
-              onScheduledDateChange={(scheduledDate) =>
-                setDraft((prev) => ({ ...prev, scheduledDate }))
-              }
+              onScheduledDateChange={handleScheduledDateChange}
               dueDate={draft.dueDate}
               onDueDateChange={(dueDate) =>
                 setDraft((prev) => ({ ...prev, dueDate }))
