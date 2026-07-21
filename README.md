@@ -2,60 +2,65 @@
 
 A markdown-backed todo app with projects, scheduling, and settings.
 
-## Development
+## Desktop app (Electron)
+
+### Run
 
 ```bash
 npm install
-npm run dev
+npm run dev      # development (Vite + hot reload)
+npm run start    # production (from dist/)
 ```
 
-- Frontend: http://localhost:5173
-- API: http://localhost:3001
+On restricted Linux (sandbox / shared-memory errors):
 
-Without `DATA_DIR`, data files are stored in the project root:
+```bash
+npm run dev:linux
+```
 
-- `todos.md` — tasks and projects
-- `config.yaml` — app settings
+Add `ELECTRON_DEVTOOLS=1` to open DevTools in Linux-safe mode.
 
-## Data directory (`DATA_DIR`)
+### Package executable
 
-Set `DATA_DIR` to store data outside the application directory. This is the recommended setup for containers and production deployments.
+```bash
+npm run build          # current OS
+npm run build:linux    # Linux AppImage
+npm run build:win      # Windows portable .exe
+npm run build:mac      # macOS .dmg
+```
+
+Output goes to `release/` (e.g. `todo-app-1.0.0.AppImage`). Build on the target OS.
+
+### Data
+
+Default data location:
+
+- **Linux:** `~/.config/todo-app/data/`
+- **macOS:** `~/Library/Application Support/todo-app/data/`
+- **Windows:** `%APPDATA%/todo-app/data/`
+
+Files: `todos.md`, `config.yaml`
+
+Override with `DATA_DIR`:
+
+```bash
+# Linux / macOS
+DATA_DIR=/path/to/your/data npm run dev
+
+# Windows (cmd)
+set DATA_DIR=C:\path\to\your\data && npm run dev
+```
+
+## Web app (browser)
+
+```bash
+npm run dev:web    # frontend :5173 + API :3001
+npm run start:web  # production API server
+```
+
+Without `DATA_DIR`, data files are stored in the project root (`todos.md`, `config.yaml`).
 
 ```bash
 export DATA_DIR=/path/to/your/data
-npm run dev:server
+npm run dev:web
 ```
-
-The server creates the directory if needed and stores:
-
-- `todos.md`
-- `config.yaml`
-
-## Docker
-
-Build and run with a persistent data volume:
-
-```bash
-docker compose up --build
-```
-
-Open http://localhost:3001
-
-**Note:** The Docker build uses the public [npm registry](https://registry.npmjs.org), not a private `.npmrc` mirror. If your `package-lock.json` was created behind a corporate registry, the Dockerfile rewrites those URLs automatically.
-
-Data is stored in `./data` on the host:
-
-```
-./data/
-  todos.md
-  config.yaml
-```
-
-To use a different host folder, change the volume mount in `docker-compose.yml`:
-
-```yaml
-volumes:
-  - /your/host/path:/data
-```
-
-The container sets `DATA_DIR=/data` by default.
