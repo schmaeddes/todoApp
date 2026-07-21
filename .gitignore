@@ -8,3 +8,4 @@ release
 todos.md
 config.yaml
 data/
+.npmrc
