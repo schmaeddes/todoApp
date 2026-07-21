@@ -8,11 +8,12 @@
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "dev:linux": "cross-env ELECTRON_LINUX_SAFE=1 npm run dev",
     "start": "npm run build:ui && cross-env ELECTRON_USE_DIST=1 electron .",
-    "build": "npm run build:ui && electron-builder",
-    "build:linux": "npm run build:ui && electron-builder --linux AppImage",
-    "build:win": "npm run build:ui && electron-builder --win portable",
-    "build:mac": "npm run build:ui && electron-builder --mac dmg",
+    "build": "npm run build:icons && npm run build:ui && electron-builder",
+    "build:linux": "npm run build:icons && npm run build:ui && electron-builder --linux AppImage",
+    "build:win": "npm run build:icons && npm run build:ui && electron-builder --win portable",
+    "build:mac": "npm run build:icons && npm run build:ui && electron-builder --mac dmg",
     "build:ui": "cross-env ELECTRON=1 vite build",
+    "build:icons": "node scripts/generate-icon.mjs",
     "dev:web": "concurrently \"node server/index.js\" \"vite\"",
     "start:web": "cross-env NODE_ENV=production node server/index.js"
   },
@@ -28,6 +29,7 @@
     "cross-env": "^7.0.3",
     "electron": "^35.1.5",
     "electron-builder": "^25.1.8",
+    "sharp": "^0.34.5",
     "vite": "^6.3.5",
     "wait-on": "^8.0.3"
   },
@@ -38,6 +40,7 @@
       "output": "release"
     },
     "artifactName": "${name}-${version}.${ext}",
+    "icon": "build/icon.png",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -54,7 +57,8 @@
     "win": {
       "target": [
         "portable"
-      ]
+      ],
+      "signAndEditExecutable": false
     },
     "mac": {
       "target": [

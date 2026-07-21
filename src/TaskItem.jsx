@@ -1,5 +1,6 @@
 import { formatIsoDate, isOverdue } from './lib/dates';
-import { EditIcon, InboxIcon, RearrangeIcon, TodayIcon, TrashIcon, CalendarIcon, DueDateIcon } from './icons';
+import { EditIcon, InboxIcon, RearrangeIcon, TodayIcon, TrashIcon, CalendarIcon, DueDateIcon, ForwardIcon } from './icons';
+import { getTaskPriority, getTagLabel } from './tags';
 
 export default function TaskItem({
   task,
@@ -15,6 +16,8 @@ export default function TaskItem({
   onDeletePermanently,
   onRearrangeStart,
 }) {
+  const priority = getTaskPriority(task.tags);
+
   return (
     <li
       data-task-id={task.id}
@@ -31,6 +34,33 @@ export default function TaskItem({
           checked={task.done}
           onChange={() => onToggle(task.id)}
         />
+        {priority === 1 && (
+          <span
+            className="task-priority-mark"
+            aria-label={getTagLabel(1)}
+            title={getTagLabel(1)}
+          >
+            !
+          </span>
+        )}
+        {priority === 2 && (
+          <span
+            className="task-priority-icon task-priority-icon--calendar"
+            aria-label={getTagLabel(2)}
+            title={getTagLabel(2)}
+          >
+            <CalendarIcon />
+          </span>
+        )}
+        {priority === 3 && (
+          <span
+            className="task-priority-icon task-priority-icon--forward"
+            aria-label={getTagLabel(3)}
+            title={getTagLabel(3)}
+          >
+            <ForwardIcon />
+          </span>
+        )}
         <span className="task-text">{task.text}</span>
         {(task.scheduledDate || task.dueDate) && (
           <span className="task-dates" aria-label="Task dates">

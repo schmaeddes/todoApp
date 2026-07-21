@@ -21,6 +21,7 @@ const isDev = !app.isPackaged;
 const useDevServer = isDev && process.env.ELECTRON_USE_DIST !== '1';
 const DEV_SERVER_URL = 'http://localhost:5173';
 const INDEX_HTML = path.join(app.getAppPath(), 'dist', 'index.html');
+const ICON_PATH = path.join(__dirname, '../build/icon.png');
 
 let storage = null;
 
@@ -104,6 +105,7 @@ async function createWindow() {
     minWidth: 800,
     minHeight: 600,
     show: false,
+    icon: ICON_PATH,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,

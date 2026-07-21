@@ -789,17 +789,18 @@ h1 {
   background: var(--surface);
 }
 
-.date-picker-day.today {
+.date-picker-day.today:not(.selected) {
   font-weight: 700;
   color: var(--app-blue);
+  background: var(--app-blue-ring);
 }
 
-.date-picker-day.today.weekend {
+.date-picker-day.today.weekend:not(.selected) {
   color: var(--app-blue);
 }
 
 .date-picker-day.today:hover:not(.selected) {
-  background: var(--surface);
+  background: var(--app-blue-ring);
   color: var(--app-blue-hover);
 }
 
@@ -868,6 +869,46 @@ button:disabled {
 .task-card.drag-over {
   border-color: var(--app-blue);
   box-shadow: 0 0 0 2px var(--app-blue-ring);
+}
+
+.task-priority-mark {
+  flex-shrink: 0;
+  width: 1.125rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--danger);
+  text-align: center;
+}
+
+.task-card.done .task-priority-mark {
+  opacity: 0.55;
+}
+
+.task-priority-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.task-priority-icon .icon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.task-priority-icon--calendar {
+  color: #eab308;
+}
+
+.task-priority-icon--forward {
+  color: #22c55e;
+}
+
+.task-card.done .task-priority-icon {
+  opacity: 0.55;
 }
 
 .task-item {

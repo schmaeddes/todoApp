@@ -29,7 +29,11 @@ npm run build:win      # Windows portable .exe
 npm run build:mac      # macOS .dmg
 ```
 
-Output goes to `release/` (e.g. `todo-app-1.0.0.AppImage`). Build on the target OS.
+Output goes to `release/` (e.g. `todo-app-1.0.0.AppImage`). Build on the target OS when possible.
+
+**Windows from Linux:** `npm run build:win` works without Wine (build only — you don't run the `.exe` on Linux). The portable `.exe` is produced in `release/`. File-icon metadata is skipped on cross-builds; for a custom `.exe` icon, run `npm run build:win` on Windows instead.
+
+App icon: white inbox on the default app blue (`build/icon.svg` → run `npm run build:icons` to regenerate).
 
 ### Data
 

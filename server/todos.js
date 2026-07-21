@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import { LEGACY_PROJECTS_FILE, TODOS_FILE } from './paths.js';
+import { normalizeTags } from './tags.js';
 
 const TASK_LINE =
   /^- \[( |x)\] (.+?)(?: <!-- (.+?) -->)?\s*$/;
@@ -46,7 +47,7 @@ function parseTaskMetadata(comment) {
   const dueMatch = comment.match(/due:(\d{4}-\d{2}-\d{2})/);
   if (dueMatch) metadata.dueDate = dueMatch[1];
 
-  const tagsMatch = comment.match(/tags:([\w,-]+)/);
+  const tagsMatch = comment.match(/tags:([^ ]+)/);
   if (tagsMatch) {
     metadata.tags = tagsMatch[1].split(',').filter(Boolean);
   }
@@ -86,7 +87,7 @@ function normalizeTodo(todo) {
     list: todo.list || 'inbox',
     scheduledDate: normalizeIsoDate(todo.scheduledDate),
     dueDate: normalizeIsoDate(todo.dueDate),
-    tags: Array.isArray(todo.tags) ? todo.tags : [],
+    tags: normalizeTags(todo.tags),
   };
 
   if (normalized.list === 'trash' || normalized.list.startsWith('project:')) {
