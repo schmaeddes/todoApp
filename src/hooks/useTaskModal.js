@@ -70,14 +70,20 @@ export function createTaskModalHandlers({
   updateTask,
   moveTaskToTrash,
   closeTaskModal,
+  navigate,
 }) {
   function handleSave(data) {
     if (!modal) return;
 
     switch (modal.type) {
-      case 'add-project':
-        addProject(data.name);
+      case 'add-project': {
+        const project = addProject(data.name);
+        if (project) {
+          closeTaskModal();
+          navigate(`/projects/${project.slug}`);
+        }
         break;
+      }
       case 'edit-project':
         renameProject(modal.projectId, data.name);
         break;

@@ -15,7 +15,7 @@ export default function useProjectStore({
 }) {
   function addProject(name) {
     const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!trimmed) return null;
 
     const slug = createUniqueProjectSlug(trimmed, projects);
     const newProject = normalizeProject({
@@ -26,6 +26,7 @@ export default function useProjectStore({
 
     commitProjects((prev) => [...prev, newProject]);
     setError(null);
+    return newProject;
   }
 
   function renameProject(projectId, name) {

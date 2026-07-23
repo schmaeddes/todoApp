@@ -19,7 +19,7 @@ npm run dev:linux
 npm run start:linux   # production build from dist/
 ```
 
-Packaged AppImages enable the same workaround automatically. Add `ELECTRON_DEVTOOLS=1` to open DevTools in Linux-safe mode.
+Packaged Linux AppImages use a launcher wrapper with `ELECTRON_NO_SANDBOX=1` so they start from the file manager or terminal without extra flags. Rebuild with `npm run build:linux` after pulling changes.
 
 ### Package executable
 
@@ -30,7 +30,12 @@ npm run build:win      # Windows portable .exe
 npm run build:mac      # macOS .dmg
 ```
 
-Output goes to `release/` (e.g. `todo-app-1.0.0.AppImage`). Build on the target OS when possible.
+Packaged Linux output in `release/`:
+
+- `todo-app-1.0.0.AppImage` — main build (patched for Linux sandbox restrictions)
+- `run-todo-app.sh` — fallback launcher if double-click still fails: `./run-todo-app.sh`
+
+Rebuild with `npm run build:linux` after pulling changes. Do not use old `Todo App-*.AppImage` files.
 
 **Windows from Linux:** `npm run build:win` works without Wine (build only — you don't run the `.exe` on Linux). The portable `.exe` is produced in `release/`. File-icon metadata is skipped on cross-builds; for a custom `.exe` icon, run `npm run build:win` on Windows instead.
 

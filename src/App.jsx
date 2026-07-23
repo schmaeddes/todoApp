@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import AppModals from './components/AppModals';
 import MoveToast from './components/MoveToast';
 import SettingsPage from './components/SettingsPage';
@@ -17,6 +17,7 @@ import useTaskModal, {
 import useTodoStore from './hooks/useTodoStore';
 
 export default function App() {
+  const navigate = useNavigate();
   const {
     tasks,
     projects,
@@ -100,6 +101,7 @@ export default function App() {
     updateTask,
     moveTaskToTrash,
     closeTaskModal,
+    navigate,
   });
 
   if (redirectTo) {

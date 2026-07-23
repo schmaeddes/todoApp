@@ -874,9 +874,11 @@ button:disabled {
   gap: 0.5rem;
   margin: 0;
   padding: 0 0.25rem;
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .task-project-heading .icon {

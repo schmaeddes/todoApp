@@ -42,6 +42,8 @@
     },
     "artifactName": "${name}-${version}.${ext}",
     "icon": "build/icon.png",
+    "afterPack": "electron/after-pack.cjs",
+    "afterAllArtifactBuild": "electron/after-all-artifact-build.cjs",
     "files": [
       "dist/**/*",
       "electron/**/*",
@@ -53,11 +55,7 @@
         "AppImage"
       ],
       "category": "Office",
-      "executableName": "todo-app",
-      "executableArgs": [
-        "--no-sandbox",
-        "--disable-dev-shm-usage"
-      ]
+      "executableName": "todo-app"
     },
     "win": {
       "target": [

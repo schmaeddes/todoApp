@@ -99,10 +99,6 @@ export default function TaskModal({
 
     if (isProjectModal) {
       onSave({ name: trimmed });
-      if (isAddProject) {
-        setDraft({ text: '' });
-        requestAnimationFrame(() => textInputRef.current?.focus());
-      }
       return;
     }
 
