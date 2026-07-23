@@ -137,6 +137,7 @@ export default function App() {
         ) : (
           <TaskListView
             activeView={activeView}
+            projects={projects}
             loading={loading}
             visibleTasks={visibleTasks}
             emptyMessage={emptyMessage}

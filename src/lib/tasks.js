@@ -83,8 +83,68 @@ function sortTasksWithDoneLast(tasks) {
     .map(({ task }) => task);
 }
 
-export function getTodayTasks(tasks) {
-  return tasks.filter((task) => task.list === 'today');
+export function classifyProjectTaskTiming(task, today = toIsoDate(new Date())) {
+  const schedule = normalizeIsoDate(task.scheduledDate);
+  const due = normalizeIsoDate(task.dueDate);
+
+  if (schedule === today || (due && due <= today)) {
+    return 'today';
+  }
+
+  if (schedule && schedule > today) {
+    return 'scheduled';
+  }
+
+  return 'sometime';
+}
+
+export function getTodayTasks(tasks, today = toIsoDate(new Date())) {
+  return tasks.filter((task) => {
+    if (task.list === 'trash') {
+      return false;
+    }
+
+    if (task.list === 'today') {
+      return true;
+    }
+
+    if (isProjectList(task.list)) {
+      return classifyProjectTaskTiming(task, today) === 'today';
+    }
+
+    return false;
+  });
+}
+
+export function getScheduledTasks(tasks, today = toIsoDate(new Date())) {
+  return tasks.filter((task) => {
+    if (task.list === 'trash') {
+      return false;
+    }
+
+    if (isProjectList(task.list)) {
+      return classifyProjectTaskTiming(task, today) === 'scheduled';
+    }
+
+    return Boolean(task.scheduledDate && task.scheduledDate > today);
+  });
+}
+
+export function getSometimeTasks(tasks, today = toIsoDate(new Date())) {
+  return tasks.filter((task) => {
+    if (task.list === 'trash') {
+      return false;
+    }
+
+    if (isProjectList(task.list)) {
+      return classifyProjectTaskTiming(task, today) === 'sometime';
+    }
+
+    return (
+      task.list === 'sometime' &&
+      (!task.scheduledDate || task.scheduledDate <= today)
+    );
+  });
 }
 
 export function getVisibleTasks(tasks, activeView, activeProject = null) {
@@ -96,20 +156,10 @@ export function getVisibleTasks(tasks, activeView, activeProject = null) {
       visible = tasks.filter((task) => task.list === 'trash');
       break;
     case 'scheduled':
-      visible = tasks.filter(
-        (task) =>
-          task.list !== 'trash' &&
-          !isProjectList(task.list) &&
-          task.scheduledDate &&
-          task.scheduledDate > today,
-      );
+      visible = getScheduledTasks(tasks, today);
       break;
     case 'sometime':
-      visible = tasks.filter(
-        (task) =>
-          task.list === 'sometime' &&
-          (!task.scheduledDate || task.scheduledDate <= today),
-      );
+      visible = getSometimeTasks(tasks, today);
       break;
     case 'today':
       visible = getTodayTasks(tasks);
@@ -138,6 +188,90 @@ export function getVisibleTasks(tasks, activeView, activeProject = null) {
   }
 
   return sortTasksWithDoneLast(visible);
+}
+
+export const PROJECT_TASK_SECTIONS = [
+  { id: 'today', label: 'Today' },
+  { id: 'scheduled', label: 'Scheduled' },
+  { id: 'sometime', label: 'Sometime' },
+];
+
+export function groupProjectTasksByTiming(tasks) {
+  const groups = PROJECT_TASK_SECTIONS.map((section) => ({
+    ...section,
+    tasks: [],
+  }));
+
+  for (const task of tasks) {
+    const timing = classifyProjectTaskTiming(task);
+    const group = groups.find((item) => item.id === timing);
+    if (group) {
+      group.tasks.push(task);
+    }
+  }
+
+  return groups
+    .map((group) => ({
+      ...group,
+      tasks: sortTasksWithDoneLast(group.tasks),
+    }))
+    .filter((group) => group.tasks.length > 0);
+}
+
+export function groupStandardAndProjectTasks(tasks, projects = []) {
+  const standardTasks = sortTasksWithDoneLast(
+    tasks.filter((task) => !isProjectList(task.list)),
+  );
+  const projectTasksBySlug = new Map();
+
+  for (const task of tasks) {
+    if (!isProjectList(task.list)) {
+      continue;
+    }
+
+    const slug = getProjectSlugFromList(task.list);
+    if (!projectTasksBySlug.has(slug)) {
+      projectTasksBySlug.set(slug, []);
+    }
+    projectTasksBySlug.get(slug).push(task);
+  }
+
+  const groups = [];
+
+  if (standardTasks.length > 0) {
+    groups.push({
+      id: 'standard',
+      kind: 'standard',
+      label: null,
+      tasks: standardTasks,
+    });
+  }
+
+  for (const project of projects) {
+    const projectTasks = projectTasksBySlug.get(project.slug);
+    if (!projectTasks?.length) {
+      continue;
+    }
+
+    groups.push({
+      id: toProjectList(project.slug),
+      kind: 'project',
+      label: project.name,
+      tasks: sortTasksWithDoneLast(projectTasks),
+    });
+    projectTasksBySlug.delete(project.slug);
+  }
+
+  for (const [slug, projectTasks] of projectTasksBySlug) {
+    groups.push({
+      id: toProjectList(slug),
+      kind: 'project',
+      label: slug,
+      tasks: sortTasksWithDoneLast(projectTasks),
+    });
+  }
+
+  return groups;
 }
 
 export function getDestinationSelectValue({ list, scheduledDate, dueDate }) {

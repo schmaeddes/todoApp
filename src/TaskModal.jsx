@@ -6,6 +6,7 @@ import {
   toIsoDate,
 } from './lib/dates';
 import { createNewTaskMetaForView, getDestinationSelectValue } from './lib/tasks';
+import { isProjectList } from './projects';
 import TaskMetaActions from './TaskMetaActions';
 
 function createDraftFromTask(task) {
@@ -139,11 +140,12 @@ export default function TaskModal({
     setDraft((prev) => {
       const todayIso = toIsoDate(new Date());
       const currentSchedule = toIsoDate(prev.scheduledDate);
+      const inProject = isProjectList(prev.list);
 
       if (nextList === 'scheduled') {
         return {
           ...prev,
-          list: 'inbox',
+          list: inProject ? prev.list : 'inbox',
           scheduledDate:
             currentSchedule && currentSchedule > todayIso
               ? prev.scheduledDate
@@ -154,7 +156,7 @@ export default function TaskModal({
       if (nextList === 'today') {
         return {
           ...prev,
-          list: 'today',
+          list: inProject ? prev.list : 'today',
           scheduledDate: getTodayDate(),
         };
       }
@@ -162,7 +164,7 @@ export default function TaskModal({
       if (nextList === 'inbox') {
         return {
           ...prev,
-          list: 'inbox',
+          list: inProject ? prev.list : 'inbox',
           scheduledDate:
             currentSchedule && currentSchedule > todayIso ? null : prev.scheduledDate,
         };
@@ -171,7 +173,7 @@ export default function TaskModal({
       if (nextList === 'sometime') {
         return {
           ...prev,
-          list: 'sometime',
+          list: inProject ? prev.list : 'sometime',
           scheduledDate:
             currentSchedule && currentSchedule > todayIso ? null : prev.scheduledDate,
         };
@@ -191,7 +193,11 @@ export default function TaskModal({
       const todayIso = toIsoDate(new Date());
       const nextSchedule = toIsoDate(scheduledDate);
 
-      if (nextSchedule && nextSchedule > todayIso) {
+      if (
+        nextSchedule &&
+        nextSchedule > todayIso &&
+        !isProjectList(prev.list)
+      ) {
         return { ...prev, scheduledDate, list: 'inbox' };
       }
 
