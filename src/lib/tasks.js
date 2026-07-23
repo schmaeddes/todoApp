@@ -17,7 +17,7 @@ export function resolveTaskPlacement({ list, scheduledDate, dueDate }) {
   const due = normalizeIsoDate(dueDate);
   const resolvedList = list || 'inbox';
 
-  if (resolvedList === 'trash' || isProjectList(resolvedList)) {
+  if (resolvedList === 'trash' || resolvedList === 'sometime' || isProjectList(resolvedList)) {
     return { list: resolvedList, scheduledDate: schedule };
   }
 
@@ -64,6 +64,8 @@ export function createNewTaskMetaForView(activeView, activeProject = null) {
     meta.list = toProjectList(activeProject.slug);
   } else if (activeView === 'scheduled') {
     meta.scheduledDate = getTomorrowDate();
+  } else if (activeView === 'sometime') {
+    meta.list = 'sometime';
   }
 
   return meta;
@@ -102,6 +104,13 @@ export function getVisibleTasks(tasks, activeView, activeProject = null) {
           task.scheduledDate > today,
       );
       break;
+    case 'sometime':
+      visible = tasks.filter(
+        (task) =>
+          task.list === 'sometime' &&
+          (!task.scheduledDate || task.scheduledDate <= today),
+      );
+      break;
     case 'today':
       visible = getTodayTasks(tasks);
       break;
@@ -133,6 +142,7 @@ export function getVisibleTasks(tasks, activeView, activeProject = null) {
 
 export function getDestinationSelectValue({ list, scheduledDate, dueDate }) {
   if (list === 'today') return 'today';
+  if (list === 'sometime') return 'sometime';
 
   if (isProjectList(list)) {
     return list;
@@ -155,6 +165,7 @@ export function getDestinationSelectValue({ list, scheduledDate, dueDate }) {
 export function getTaskDestinationLabel(task, projects = []) {
   if (task.list === 'trash') return 'Trash';
   if (task.list === 'today') return 'Today';
+  if (task.list === 'sometime') return 'Sometime';
 
   if (isProjectList(task.list)) {
     const slug = getProjectSlugFromList(task.list);

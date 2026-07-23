@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import DatePicker from './DatePicker';
 import { formatDisplayDate } from './lib/dates';
-import { CalendarIcon, DueDateIcon, InboxIcon, ProjectIcon, ScheduledIcon, TagIcon, TodayIcon } from './icons';
+import { CalendarIcon, DueDateIcon, InboxIcon, ProjectIcon, ScheduledIcon, SometimeIcon, TagIcon, TodayIcon } from './icons';
 import { getListLabel, isProjectList, toProjectList } from './projects';
 import { getDestinationSelectValue } from './lib/tasks';
 import { EISENHOWER_PRIORITIES, getTagLabel } from './tags';
@@ -128,6 +128,7 @@ function LocationSelectButton({
   function getIcon() {
     if (selectedValue === 'today') return <TodayIcon />;
     if (selectedValue === 'scheduled') return <ScheduledIcon />;
+    if (selectedValue === 'sometime') return <SometimeIcon />;
     if (isProjectList(selectedValue)) return <ProjectIcon />;
     return <InboxIcon />;
   }
@@ -136,6 +137,7 @@ function LocationSelectButton({
     { value: 'inbox', label: 'Inbox' },
     { value: 'today', label: 'Today' },
     { value: 'scheduled', label: 'Scheduled' },
+    { value: 'sometime', label: 'Sometime' },
     ...projects.map((project) => ({
       value: toProjectList(project.slug),
       label: project.name,

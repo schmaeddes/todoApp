@@ -1,9 +1,12 @@
+import { createRequire } from 'module';
 import { app, BrowserWindow, ipcMain, Menu } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const linuxSafe = process.env.ELECTRON_LINUX_SAFE === '1';
+const require = createRequire(import.meta.url);
+const { shouldUseLinuxSafeMode } = require('./linux-safe.cjs');
+const linuxSafe = shouldUseLinuxSafeMode();
 
 if (linuxSafe) {
   app.commandLine.appendSwitch('no-sandbox');

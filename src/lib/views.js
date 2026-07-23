@@ -4,6 +4,7 @@ import {
   ProjectsIcon,
   ScheduledIcon,
   SettingsIcon,
+  SometimeIcon,
   TodayIcon,
   TrashIcon,
 } from '../icons';
@@ -13,6 +14,7 @@ export const VIEW_ICONS = {
   inbox: InboxIcon,
   today: TodayIcon,
   scheduled: ScheduledIcon,
+  sometime: SometimeIcon,
   trash: TrashIcon,
   projects: ProjectsIcon,
   project: ProjectIcon,
@@ -23,6 +25,7 @@ export const VALID_VIEWS = new Set([
   'inbox',
   'today',
   'scheduled',
+  'sometime',
   'trash',
   'projects',
   'settings',
@@ -40,6 +43,8 @@ export function getEmptyMessage(activeView) {
       return 'No tasks for today.';
     case 'scheduled':
       return 'No scheduled tasks.';
+    case 'sometime':
+      return 'No tasks for someday.';
     case 'projects':
       return 'No projects yet. Tap + next to Projects to create one.';
     case 'project':
@@ -59,6 +64,8 @@ export function getViewTitle(activeView, activeProject = null, date = new Date()
       return formatTitleDate(date);
     case 'scheduled':
       return 'Scheduled';
+    case 'sometime':
+      return 'Sometime';
     case 'trash':
       return 'Trash';
     case 'projects':

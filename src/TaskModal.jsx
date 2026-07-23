@@ -168,6 +168,15 @@ export default function TaskModal({
         };
       }
 
+      if (nextList === 'sometime') {
+        return {
+          ...prev,
+          list: 'sometime',
+          scheduledDate:
+            currentSchedule && currentSchedule > todayIso ? null : prev.scheduledDate,
+        };
+      }
+
       return {
         ...prev,
         list: nextList,

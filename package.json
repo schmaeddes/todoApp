@@ -3,11 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "main": "electron/main.js",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "dev:linux": "cross-env ELECTRON_LINUX_SAFE=1 npm run dev",
     "start": "npm run build:ui && cross-env ELECTRON_USE_DIST=1 electron .",
+    "start:linux": "npm run build:ui && cross-env ELECTRON_LINUX_SAFE=1 ELECTRON_USE_DIST=1 electron .",
     "build": "npm run build:icons && npm run build:ui && electron-builder",
     "build:linux": "npm run build:icons && npm run build:ui && electron-builder --linux AppImage",
     "build:win": "npm run build:icons && npm run build:ui && electron-builder --win portable",
@@ -52,7 +53,11 @@
         "AppImage"
       ],
       "category": "Office",
-      "executableName": "todo-app"
+      "executableName": "todo-app",
+      "executableArgs": [
+        "--no-sandbox",
+        "--disable-dev-shm-usage"
+      ]
     },
     "win": {
       "target": [

@@ -98,7 +98,7 @@ body {
 }
 
 .sidebar-main-nav > .sidebar-btn:nth-child(2),
-.sidebar-main-nav > .sidebar-btn:nth-child(4) {
+.sidebar-main-nav > .sidebar-btn:nth-child(5) {
   margin-top: 0.5rem;
 }
 
@@ -287,6 +287,7 @@ h1 {
 .view-title-icon--inbox { color: var(--app-blue); }
 .view-title-icon--today { color: #f59e0b; }
 .view-title-icon--scheduled { color: #8b5cf6; }
+.view-title-icon--sometime { color: #618500; }
 .view-title-icon--trash { color: var(--danger); }
 .view-title-icon--projects,
 .view-title-icon--project { color: #10b981; }

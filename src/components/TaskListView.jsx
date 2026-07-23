@@ -31,7 +31,9 @@ export default function TaskListView({
               task={task}
               isTrashView={activeView === 'trash'}
               showMoveToToday={
-                activeView === 'inbox' || activeView === 'scheduled'
+                activeView === 'inbox' ||
+                activeView === 'scheduled' ||
+                activeView === 'sometime'
               }
               isDragging={draggedTaskId === task.id}
               isDragOver={

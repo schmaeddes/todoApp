@@ -12,13 +12,14 @@ npm run dev      # development (Vite + hot reload)
 npm run start    # production (from dist/)
 ```
 
-On restricted Linux (sandbox / shared-memory errors):
+On restricted Linux during development (sandbox / shared-memory errors):
 
 ```bash
 npm run dev:linux
+npm run start:linux   # production build from dist/
 ```
 
-Add `ELECTRON_DEVTOOLS=1` to open DevTools in Linux-safe mode.
+Packaged AppImages enable the same workaround automatically. Add `ELECTRON_DEVTOOLS=1` to open DevTools in Linux-safe mode.
 
 ### Package executable
 

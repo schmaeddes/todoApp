@@ -6,6 +6,7 @@ import {
   ProjectsIcon,
   ScheduledIcon,
   SettingsIcon,
+  SometimeIcon,
   TodayIcon,
   TrashIcon,
 } from '../icons';
@@ -17,6 +18,9 @@ function sidebarLinkClass(isActive, extra = '') {
 
 export default function Sidebar({ tasks, projects, loading, onAddProject }) {
   const inboxCount = getVisibleTasks(tasks, 'inbox').filter(
+    (task) => !task.done,
+  ).length;
+  const sometimeCount = getVisibleTasks(tasks, 'sometime').filter(
     (task) => !task.done,
   ).length;
   const { onTime: todayOnTimeCount, overdue: todayOverdueCount } =
@@ -53,6 +57,16 @@ export default function Sidebar({ tasks, projects, loading, onAddProject }) {
           >
             <ScheduledIcon />
             Scheduled
+          </NavLink>
+          <NavLink
+            to="/sometime"
+            className={({ isActive }) => sidebarLinkClass(isActive)}
+          >
+            <SometimeIcon />
+            Sometime
+            {sometimeCount > 0 && (
+              <span className="sidebar-count">{sometimeCount}</span>
+            )}
           </NavLink>
           <NavLink
             to="/trash"

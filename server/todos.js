@@ -14,6 +14,7 @@ const SYSTEM_SECTIONS = new Map([
   ['# Inbox', 'inbox'],
   ['# Today', 'today'],
   ['# Scheduled', 'scheduled'],
+  ['# Sometime', 'sometime'],
   ['# Trash', 'trash'],
   ['# Projects', 'projects'],
 ]);
@@ -94,6 +95,17 @@ function normalizeTodo(todo) {
     return normalized;
   }
 
+  if (normalized.list === 'sometime') {
+    const todayIso = getTodayIso();
+    if (
+      normalized.scheduledDate === todayIso ||
+      (normalized.dueDate && normalized.dueDate <= todayIso)
+    ) {
+      normalized.list = 'today';
+    }
+    return normalized;
+  }
+
   const todayIso = getTodayIso();
 
   if (
@@ -132,12 +144,13 @@ function assignId(metadata, seenIds, nextId) {
 }
 
 function hasSectionStructure(content) {
-  return /^# (Inbox|Today|Scheduled|Trash|Projects)\s*$/m.test(content);
+  return /^# (Inbox|Today|Scheduled|Sometime|Trash|Projects)\s*$/m.test(content);
 }
 
 function listFromSection(section, projectSlug) {
   if (section === 'today') return 'today';
   if (section === 'trash') return 'trash';
+  if (section === 'sometime') return 'sometime';
   if (section === 'project' && projectSlug) {
     return `project:${projectSlug}`;
   }
@@ -153,6 +166,7 @@ function classifyTaskForWrite(todo, todayIso) {
   if (normalized.scheduledDate && normalized.scheduledDate > todayIso) {
     return 'scheduled';
   }
+  if (normalized.list === 'sometime') return 'sometime';
   return 'inbox';
 }
 
@@ -340,6 +354,7 @@ async function writeTodosFile(todos, projects) {
     inbox: [],
     today: [],
     scheduled: [],
+    sometime: [],
     trash: [],
     projects: new Map(),
   };
@@ -372,6 +387,7 @@ async function writeTodosFile(todos, projects) {
   appendSection('# Inbox', groups.inbox);
   appendSection('# Today', groups.today);
   appendSection('# Scheduled', groups.scheduled);
+  appendSection('# Sometime', groups.sometime);
   appendSection('# Trash', groups.trash);
 
   lines.push('# Projects', '');
